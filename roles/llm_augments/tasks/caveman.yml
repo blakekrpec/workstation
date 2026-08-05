@@ -1,0 +1,49 @@
+---
+# caveman — https://github.com/JuliusBrussee/caveman
+# Claude Code plugin that compresses *output* by answering in caveman-speak,
+# byte-preserving code, paths and URLs. Opinionated: it changes how every
+# reply reads. Turn it off with `llm_augment_caveman: false`, or per-session
+# with `claude plugin disable caveman`.
+#
+# Installed through the plugin marketplace rather than symlinked from this
+# repo, so `claude plugin update` keeps working normally.
+
+- name: caveman | list configured marketplaces
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      export NVM_DIR="$HOME/.nvm"
+      . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+      claude plugin marketplace list 2>/dev/null
+  register: caveman_marketplaces
+  changed_when: false
+  failed_when: false
+
+- name: caveman | add the marketplace
+  when: "'caveman' not in caveman_marketplaces.stdout"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      export NVM_DIR="$HOME/.nvm"
+      . "$NVM_DIR/nvm.sh"
+      claude plugin marketplace add {{ caveman_marketplace }}
+
+- name: caveman | list installed plugins
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      export NVM_DIR="$HOME/.nvm"
+      . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+      claude plugin list 2>/dev/null
+  register: caveman_plugins
+  changed_when: false
+  failed_when: false
+
+- name: caveman | install the plugin
+  when: "'caveman' not in caveman_plugins.stdout"
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      export NVM_DIR="$HOME/.nvm"
+      . "$NVM_DIR/nvm.sh"
+      claude plugin install {{ caveman_plugin }}

@@ -1,0 +1,29 @@
+---
+# rtk — https://github.com/rtk-ai/rtk
+# Wraps noisy dev commands (git status, cargo test, grep...) and strips the
+# noise before it reaches the model. Installs to ~/.local/bin, which
+# dotfiles/bash/bashrc.d/10-path.sh already puts on PATH.
+
+- name: rtk | install
+  ansible.builtin.shell:
+    cmd: >-
+      curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
+    creates: "{{ workstation_home }}/.local/bin/rtk"
+
+- name: rtk | report version
+  ansible.builtin.command: "{{ workstation_home }}/.local/bin/rtk --version"
+  register: rtk_version
+  changed_when: false
+
+# `rtk init -g` writes a PreToolUse hook + RTK.md into the Claude Code config.
+# It is not idempotent-by-design, so gate it on the marker file it produces.
+- name: rtk | check for the global hook
+  ansible.builtin.stat:
+    path: "{{ workstation_home }}/.claude/RTK.md"
+  register: rtk_hook
+  when: rtk_install_hook
+
+- name: rtk | install the Claude Code hook
+  when: rtk_install_hook and not rtk_hook.stat.exists
+  ansible.builtin.command:
+    cmd: "{{ workstation_home }}/.local/bin/rtk init -g"

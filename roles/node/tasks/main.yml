@@ -1,0 +1,39 @@
+---
+# Node comes from nvm, not apt. A sudo-installed system node prevents Claude
+# Code from updating itself — see neovim-config/docs/CLAUDE_CODE.md.
+
+- name: node | install nvm
+  ansible.builtin.shell:
+    # PROFILE=/dev/null stops the installer appending to ~/.bashrc;
+    # dotfiles/bash/bashrc.d/20-nvm.sh owns that.
+    cmd: >-
+      curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/{{ nvm_version }}/install.sh
+      | PROFILE=/dev/null bash
+    creates: "{{ workstation_home }}/.nvm/nvm.sh"
+
+- name: node | read nvm default alias
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      export NVM_DIR="$HOME/.nvm"
+      . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+      nvm version default
+  register: node_default
+  changed_when: false
+
+# Extract inside {{ }} rather than inline in `when:`. A bare `when:` string
+# mangles a filter chain containing a quoted regex — the guard silently
+# evaluated true and reinstalled Node on every run.
+- name: node | parse installed major version
+  ansible.builtin.set_fact:
+    node_default_major: "{{ node_default.stdout | regex_search('^v([0-9]+)', '\\1') | first | default('0') }}"
+
+- name: node | install Node LTS and set it as default
+  when: node_default_major | int < node_min_major | int
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      export NVM_DIR="$HOME/.nvm"
+      . "$NVM_DIR/nvm.sh"
+      nvm install --lts
+      nvm alias default 'lts/*'

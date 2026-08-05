@@ -1,0 +1,22 @@
+# Galaxy collections installed by bootstrap.sh
+.galaxy/
+
+*.retry
+__pycache__/
+
+# --- Belt and braces -------------------------------------------------------
+# roles/claude only ever symlinks the paths in its defaults, but if anything
+# under dotfiles/claude/ is ever pointed at real ~/.claude state, these keep
+# credentials and transcripts out of git.
+dotfiles/claude/.credentials.json
+dotfiles/claude/history.jsonl
+dotfiles/claude/projects/
+dotfiles/claude/sessions/
+dotfiles/claude/session-env/
+dotfiles/claude/shell-snapshots/
+dotfiles/claude/statsig/
+dotfiles/claude/cache/
+dotfiles/claude/backups/
+dotfiles/claude/ide/
+dotfiles/claude/plugins/
+dotfiles/claude/todos/

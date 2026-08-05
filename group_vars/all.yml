@@ -1,0 +1,53 @@
+---
+# Everything hangs off this. Spelled ansible_facts.env rather than the
+# top-level ansible_env alias, which is deprecated and goes away in
+# ansible-core 2.24.
+workstation_home: "{{ ansible_facts.env.HOME }}"
+
+# Where this repo is checked out. Symlinks point into it, so moving the
+# checkout means re-running the playbook.
+workstation_repo: "{{ workstation_home }}/src/workstation"
+
+# Real files displaced by a symlink are moved here (once) instead of deleted.
+workstation_backup_dir: "{{ workstation_home }}/.workstation-backup"
+
+# --- profiles --------------------------------------------------------------
+# One playbook, selected with a flag:  ./bootstrap.sh --profile coding
+# Tags still work for surgical runs:   ./bootstrap.sh --tags claude
+profile: full
+
+profiles:
+  # Everything. The default.
+  full: [base, shell, fonts, node, neovim, claude, llm_augments]
+  # Editor + agent, no desktop bits. Good for servers and WSL.
+  coding: [base, shell, node, neovim, claude, llm_augments]
+  # Claude Code and its augments, no Neovim.
+  llm: [base, shell, node, claude, llm_augments]
+  # Editor only — no agent tooling at all.
+  editor: [base, shell, fonts, node, neovim]
+  # Just enough to have a usable shell.
+  minimal: [base, shell]
+
+active_roles: "{{ profiles[profile] }}"
+
+# --- feature flags (override per machine in host_vars/) ---------------------
+unity_dev: false   # true pulls in .NET SDK + vstuc for nvim-dap Unity debugging
+
+# --- neovim ----------------------------------------------------------------
+# The nvim config is its own repo; this role only clones and updates it.
+neovim_config_repo: https://github.com/blakekrpec/neovim-config.git
+neovim_config_version: main
+neovim_install_dir: /opt/nvim-linux-x86_64
+
+# Pinned, not "stable" — a floating tag means two machines converged a month
+# apart get different editors. Bump deliberately: set the tag, converge, and
+# commit. Plugin versions are pinned separately by neovim-config/lazy-lock.json.
+neovim_version: v0.12.4
+
+# --- node ------------------------------------------------------------------
+nvm_version: v0.40.1
+node_min_major: 22   # Claude Code requires v22+
+
+# --- fonts -----------------------------------------------------------------
+nerd_font_name: 0xProto
+nerd_font_version: v3.2.1

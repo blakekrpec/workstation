@@ -1,0 +1,51 @@
+---
+# Helper role — symlink link_dest -> link_src, preserving anything real that
+# was already there. Invoke with include_role, never as a top-level role:
+#
+#   - ansible.builtin.include_role:
+#       name: link
+#     vars:
+#       link_src:  "{{ workstation_repo }}/dotfiles/claude/settings.json"
+#       link_dest: "{{ workstation_home }}/.claude/settings.json"
+
+- name: "link | assert arguments"
+  ansible.builtin.assert:
+    that:
+      - link_src is defined
+      - link_dest is defined
+    quiet: true
+
+- name: "link | inspect {{ link_dest }}"
+  ansible.builtin.stat:
+    path: "{{ link_dest }}"
+    follow: false
+  register: link_stat
+
+# No mode here on purpose. The owning role decides permissions (roles/claude
+# wants ~/.claude at 0700); setting one here would fight it every run.
+- name: "link | ensure parent of {{ link_dest }} exists"
+  ansible.builtin.file:
+    path: "{{ link_dest | dirname }}"
+    state: directory
+
+# Only real files/dirs get displaced. An existing symlink is just retargeted,
+# and force:true below handles that without a backup.
+- name: "link | prepare backup slot for {{ link_dest }}"
+  ansible.builtin.file:
+    path: "{{ link_backup_path | dirname }}"
+    state: directory
+    mode: "0755"
+  when: link_stat.stat.exists and not link_stat.stat.islnk
+
+- name: "link | preserve existing {{ link_dest }} under {{ workstation_backup_dir }}"
+  ansible.builtin.command:
+    cmd: "mv {{ link_dest | quote }} {{ link_backup_path | quote }}"
+    creates: "{{ link_backup_path }}"
+  when: link_stat.stat.exists and not link_stat.stat.islnk
+
+- name: "link | {{ link_dest | basename }} -> repo"
+  ansible.builtin.file:
+    src: "{{ link_src }}"
+    dest: "{{ link_dest }}"
+    state: link
+    force: true

@@ -1,0 +1,4 @@
+---
+# Backup path mirrors the location under $HOME, so ~/.claude/settings.json
+# lands at ~/.workstation-backup/.claude/settings.json — no collisions.
+link_backup_path: "{{ workstation_backup_dir }}/{{ link_dest | relpath(workstation_home) }}"

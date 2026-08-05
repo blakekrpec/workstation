@@ -1,0 +1,75 @@
+---
+# The single playbook. Which roles run is chosen by `profile` (see
+# group_vars/all.yml); tags still work for running one role on its own.
+#
+#   ./bootstrap.sh                     # profile: full
+#   ./bootstrap.sh --profile coding    # a named subset
+#   ./bootstrap.sh --only claude       # one role, ignoring the profile
+#   ./bootstrap.sh --tags node,claude  # tags select *within* the profile
+#
+- name: Converge workstation
+  hosts: localhost
+  gather_facts: true
+
+  pre_tasks:
+    # The inventory host is always "localhost", so host_vars/ can't key off it.
+    # Load per-machine overrides by real hostname instead; missing file is fine.
+    - name: Load per-machine variables
+      ansible.builtin.include_vars: "{{ item }}"
+      with_first_found:
+        - files:
+            - "host_vars/{{ ansible_facts.hostname }}.yml"
+          skip: true
+      tags: always
+
+    - name: Reject an unknown profile
+      ansible.builtin.assert:
+        that: profile in profiles
+        fail_msg: >-
+          Unknown profile '{{ profile }}'.
+          Known profiles: {{ profiles.keys() | list | join(', ') }}
+      tags: always
+
+    - name: Announce what will run
+      ansible.builtin.debug:
+        msg: "profile={{ profile }} -> {{ active_roles | join(', ') }}"
+      tags: always
+
+    - name: Ensure backup directory exists
+      ansible.builtin.file:
+        path: "{{ workstation_backup_dir }}"
+        state: directory
+        mode: "0755"
+      tags: always
+
+    - name: Fail early if the repo is not where group_vars says it is
+      ansible.builtin.assert:
+        that: workstation_repo | realpath == playbook_dir | realpath
+        fail_msg: >-
+          workstation_repo is {{ workstation_repo }} but the playbook is running
+          from {{ playbook_dir }}. Symlinks would point at the wrong place.
+          Move the checkout or override workstation_repo.
+      tags: always
+
+  roles:
+    - role: base
+      tags: [base]
+      when: "'base' in active_roles"
+    - role: shell
+      tags: [shell]
+      when: "'shell' in active_roles"
+    - role: fonts
+      tags: [fonts]
+      when: "'fonts' in active_roles"
+    - role: node
+      tags: [node]
+      when: "'node' in active_roles"
+    - role: neovim
+      tags: [neovim]
+      when: "'neovim' in active_roles"
+    - role: claude
+      tags: [claude]
+      when: "'claude' in active_roles"
+    - role: llm_augments
+      tags: [llm_augments, augments]
+      when: "'llm_augments' in active_roles"

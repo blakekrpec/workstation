@@ -1,0 +1,38 @@
+---
+# graphify — https://github.com/Graphify-Labs/graphify
+# Turns a repo (code, docs, PDFs, diagrams) into a queryable knowledge graph so
+# the agent can answer structural questions without reading every file.
+#
+# PyPI package is `graphifyy` (double y); the command is `graphify`.
+# Installed with pipx because Ubuntu 24.04 marks the system Python
+# externally-managed (PEP 668) — plain `pip install --user` is refused.
+
+- name: graphify | install pipx
+  become: true
+  ansible.builtin.apt:
+    name: pipx
+    state: present
+
+- name: graphify | ensure pipx bin dir is on PATH for this run
+  ansible.builtin.command: pipx ensurepath
+  register: graphify_ensurepath
+  changed_when: "'added to' in graphify_ensurepath.stdout | default('')"
+
+- name: graphify | install graphifyy
+  ansible.builtin.command:
+    cmd: pipx install graphifyy
+    creates: "{{ workstation_home }}/.local/bin/graphify"
+
+- name: graphify | check whether the skill is registered
+  ansible.builtin.stat:
+    path: "{{ workstation_home }}/.claude/skills/graphify"
+  register: graphify_skill
+  when: graphify_register_skill
+
+# `graphify install` writes the /graphify skill into the Claude Code config.
+# Note this lands in ~/.claude/skills, which roles/claude symlinks into this
+# repo — so the skill is captured in git like any other.
+- name: graphify | register the /graphify skill
+  when: graphify_register_skill and not graphify_skill.stat.exists
+  ansible.builtin.command:
+    cmd: "{{ workstation_home }}/.local/bin/graphify install"

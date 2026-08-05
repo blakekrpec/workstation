@@ -1,0 +1,2 @@
+# Placeholder so git tracks this directory.
+# roles/claude symlinks ~/.claude/skills here; add subdirs to ship them everywhere.

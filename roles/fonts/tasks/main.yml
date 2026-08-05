@@ -1,0 +1,35 @@
+---
+# Without a Nerd Font, nvim icons render as ◆? diamonds.
+# See neovim-config/docs/NERD_FONT.md.
+# Installed per-user rather than /usr/share/fonts — no sudo needed.
+
+- name: fonts | list installed families
+  ansible.builtin.command: fc-list :family
+  register: fonts_installed
+  changed_when: false
+
+- name: fonts | install {{ nerd_font_name }} Nerd Font
+  when: nerd_font_name not in fonts_installed.stdout
+  block:
+    - name: fonts | ensure font directory exists
+      ansible.builtin.file:
+        path: "{{ workstation_home }}/.local/share/fonts/{{ nerd_font_name }}"
+        state: directory
+        mode: "0755"
+
+    - name: fonts | download tarball
+      ansible.builtin.get_url:
+        url: >-
+          https://github.com/ryanoasis/nerd-fonts/releases/download/{{ nerd_font_version }}/{{ nerd_font_name }}.tar.xz
+        dest: "/tmp/{{ nerd_font_name }}-{{ nerd_font_version }}.tar.xz"
+        mode: "0644"
+
+    - name: fonts | extract
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ nerd_font_name }}-{{ nerd_font_version }}.tar.xz"
+        dest: "{{ workstation_home }}/.local/share/fonts/{{ nerd_font_name }}"
+        remote_src: true
+
+    - name: fonts | rebuild font cache
+      ansible.builtin.command: fc-cache -f
+      changed_when: true

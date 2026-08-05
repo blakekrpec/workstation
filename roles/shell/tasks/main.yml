@@ -1,0 +1,22 @@
+---
+# ~/.bashrc.d is a symlink to the repo, so adding a shell fragment is a commit
+# — no playbook run needed to pick it up.
+- name: shell | link ~/.bashrc.d to the repo
+  ansible.builtin.include_role:
+    name: link
+  vars:
+    link_src: "{{ workstation_repo }}/dotfiles/bash/bashrc.d"
+    link_dest: "{{ workstation_home }}/.bashrc.d"
+
+# One managed block replaces setup.sh's grep-guarded `>> ~/.bashrc` appends,
+# which could be added but never cleanly removed.
+- name: shell | install the bashrc.d loader
+  ansible.builtin.blockinfile:
+    path: "{{ workstation_home }}/.bashrc"
+    marker: "# {mark} workstation (ansible) — do not edit between these markers"
+    create: false
+    block: |
+      for _f in "$HOME"/.bashrc.d/*.sh; do
+        [ -r "$_f" ] && . "$_f"
+      done
+      unset _f

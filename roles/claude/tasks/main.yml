@@ -1,0 +1,41 @@
+---
+# ~/.claude mixes config with credentials and session state. Only the files
+# listed in claude_linked_paths are managed; .credentials.json, projects/,
+# sessions/, history.jsonl, shell-snapshots/, session-env/ and cache/ are
+# left strictly alone and are denied in .gitignore.
+
+- name: claude | ensure ~/.claude exists
+  ansible.builtin.file:
+    path: "{{ workstation_home }}/.claude"
+    state: directory
+    mode: "0700"
+
+- name: claude | detect CLI
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      export NVM_DIR="$HOME/.nvm"
+      . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+      command -v claude
+  register: claude_cli
+  changed_when: false
+  failed_when: false
+
+- name: claude | install CLI via npm
+  when: claude_cli.rc != 0
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      export NVM_DIR="$HOME/.nvm"
+      . "$NVM_DIR/nvm.sh"
+      npm install -g @anthropic-ai/claude-code
+
+# Whole directories are linked, not their contents — so adding a skill,
+# agent or command is a single commit with no playbook run.
+- name: claude | link managed config into ~/.claude
+  ansible.builtin.include_role:
+    name: link
+  vars:
+    link_src: "{{ workstation_repo }}/dotfiles/claude/{{ item }}"
+    link_dest: "{{ workstation_home }}/.claude/{{ item }}"
+  loop: "{{ claude_linked_paths }}"

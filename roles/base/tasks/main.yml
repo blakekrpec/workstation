@@ -1,0 +1,35 @@
+---
+- name: base | install apt packages
+  become: true
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - curl
+      - wget
+      - git
+      - unzip          # Mason needs it — neovim-config/docs/MASON_UNZIP_UBUNTU.md
+      - ripgrep        # telescope live_grep
+      - fd-find
+      - jq
+      - tree
+      - fontconfig
+      - python3-venv   # Mason needs it for pylsp — docs/PYLSP_UBUNTU_ISSUE.md
+      - python3-pip
+      - xclip          # nvim system clipboard on X11
+      - wl-clipboard   # nvim system clipboard on Wayland
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: base | ensure ~/.local/bin exists
+  ansible.builtin.file:
+    path: "{{ workstation_home }}/.local/bin"
+    state: directory
+    mode: "0755"
+
+# Ubuntu ships the binary as fdfind to avoid a name clash; everyone expects fd.
+- name: base | expose fd-find as fd
+  ansible.builtin.file:
+    src: /usr/bin/fdfind
+    dest: "{{ workstation_home }}/.local/bin/fd"
+    state: link

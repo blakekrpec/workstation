@@ -1,0 +1,8 @@
+---
+# Everything else under ~/.claude is state or secrets — never managed here.
+claude_linked_paths:
+  - settings.json
+  - CLAUDE.md
+  - skills
+  - agents
+  - commands

@@ -1,0 +1,17 @@
+---
+# Each augment can be turned off individually, e.g. in host_vars:
+#   llm_augment_caveman: false
+llm_augment_rtk: true        # token-compressing CLI proxy
+llm_augment_beads: true      # git-native issue tracker / agent memory
+llm_augment_graphify: true   # codebase -> queryable knowledge graph
+llm_augment_caveman: true    # terse output style
+
+# rtk installs a PreToolUse hook into ~/.claude/settings.json that rewrites
+# Bash commands. Set false to install the binary but leave Claude Code alone.
+rtk_install_hook: true
+
+# graphify ships as a /graphify skill; `graphify install` registers it.
+graphify_register_skill: true
+
+caveman_marketplace: JuliusBrussee/caveman
+caveman_plugin: caveman@caveman

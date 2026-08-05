@@ -1,0 +1,120 @@
+---
+# Installs the Neovim *binary* at a pinned version and clones the config repo.
+# It knows nothing about the config's contents — that lives in
+# github.com/blakekrpec/neovim-config, which also carries the Windows installer.
+#
+# Two things are pinned, separately:
+#   neovim_version (group_vars)          -> the editor itself
+#   neovim-config/lazy-lock.json         -> all 35 plugins, by commit
+
+- name: neovim | read installed version
+  ansible.builtin.command: "{{ neovim_install_dir }}/bin/nvim --version"
+  register: neovim_installed
+  changed_when: false
+  failed_when: false
+
+- name: neovim | install {{ neovim_version }}
+  # Reinstalls when the pin is bumped, not just when nvim is missing.
+  when: neovim_version not in (neovim_installed.stdout | default(''))
+  block:
+    - name: neovim | download {{ neovim_version }} tarball
+      ansible.builtin.get_url:
+        url: >-
+          https://github.com/neovim/neovim/releases/download/{{ neovim_version }}/nvim-linux-x86_64.tar.gz
+        dest: "/tmp/nvim-{{ neovim_version }}-linux-x86_64.tar.gz"
+        mode: "0644"
+
+    - name: neovim | extract to /opt
+      become: true
+      ansible.builtin.unarchive:
+        src: "/tmp/nvim-{{ neovim_version }}-linux-x86_64.tar.gz"
+        dest: /opt
+        remote_src: true
+
+# Runs unconditionally so the symlink is repointed at the managed install
+# *before* the legacy tree below is removed. Reversing these two orphans nvim.
+- name: neovim | point /usr/local/bin/nvim at the managed install
+  become: true
+  ansible.builtin.file:
+    src: "{{ neovim_install_dir }}/bin/nvim"
+    dest: /usr/local/bin/nvim
+    state: link
+
+# setup.sh unpacked the release *inside* /usr/local/bin. Clean that up so the
+# /opt install is the only copy on disk.
+- name: neovim | remove legacy install under /usr/local/bin
+  become: true
+  ansible.builtin.file:
+    path: /usr/local/bin/nvim-linux-x86_64
+    state: absent
+
+- name: neovim | verify the pinned version is what runs
+  ansible.builtin.command: nvim --version
+  register: neovim_check
+  changed_when: false
+  failed_when: neovim_version not in neovim_check.stdout
+
+# The git module resets a tracked branch to the remote tip. `force: false` does
+# NOT protect you: modified tracked files and un-pushed commits are both
+# discarded silently. Verified, so check before letting it near the checkout.
+- name: neovim | stat existing config checkout
+  ansible.builtin.stat:
+    path: "{{ workstation_home }}/.config/nvim/.git"
+  register: neovim_config_git
+
+- name: neovim | guard against clobbering local work
+  when: neovim_config_git.stat.exists
+  block:
+    - name: neovim | fetch without touching the worktree
+      ansible.builtin.command:
+        cmd: git fetch --quiet origin
+        chdir: "{{ workstation_home }}/.config/nvim"
+      changed_when: false
+
+    - name: neovim | look for changes a reset would destroy
+      ansible.builtin.shell:
+        chdir: "{{ workstation_home }}/.config/nvim"
+        cmd: |
+          # Tracked-but-modified files. Untracked files survive a reset, so
+          # they are deliberately not counted here.
+          git status --porcelain --untracked-files=no
+          # Commits that exist locally and nowhere else.
+          git log --oneline origin/{{ neovim_config_version }}..HEAD
+      register: neovim_config_local
+      changed_when: false
+
+    - name: neovim | refuse to run if there is unpushed work
+      ansible.builtin.assert:
+        that: neovim_config_local.stdout | trim | length == 0
+        fail_msg: |
+          ~/.config/nvim has local work that the git update would destroy:
+
+          {{ neovim_config_local.stdout }}
+          Push or stash it, then re-run. To skip Neovim for now:
+            ./bootstrap.sh --profile llm
+
+- name: neovim | clone config repo to ~/.config/nvim
+  ansible.builtin.git:
+    repo: "{{ neovim_config_repo }}"
+    dest: "{{ workstation_home }}/.config/nvim"
+    version: "{{ neovim_config_version }}"
+    update: true
+  register: neovim_config_clone
+
+- name: neovim | stat lazy.nvim
+  ansible.builtin.stat:
+    path: "{{ workstation_home }}/.local/share/nvim/lazy/lazy.nvim"
+  register: neovim_lazy
+
+# lazy.nvim bootstraps itself on first launch (see lua/lazy_config.lua), then
+# `restore` checks every plugin out at the commit in lazy-lock.json. Only run
+# it when the config actually moved — it is slow and hits the network.
+- name: neovim | restore plugins to lazy-lock.json
+  when: neovim_config_clone.changed or not neovim_lazy.stat.exists
+  ansible.builtin.command:
+    argv:
+      - nvim
+      - --headless
+      - "+Lazy! restore"
+      - "+qa"
+  changed_when: true

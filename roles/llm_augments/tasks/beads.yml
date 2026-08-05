@@ -1,0 +1,24 @@
+---
+# beads — https://github.com/gastownhall/beads
+# Git-native issue tracker that survives context compaction; the binary is `bd`.
+# Installed from npm so it rides the nvm-managed Node rather than Homebrew.
+
+- name: beads | detect
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      export NVM_DIR="$HOME/.nvm"
+      . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+      command -v bd
+  register: beads_bin
+  changed_when: false
+  failed_when: false
+
+- name: beads | install @beads/bd
+  when: beads_bin.rc != 0
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      export NVM_DIR="$HOME/.nvm"
+      . "$NVM_DIR/nvm.sh"
+      npm install -g @beads/bd

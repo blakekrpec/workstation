@@ -1,0 +1,7 @@
+---
+collections:
+  # community.general.dconf — GNOME settings (Phase 2)
+  - name: community.general
+    version: ">=8.0.0"
+  - name: ansible.posix
+    version: ">=1.5.0"

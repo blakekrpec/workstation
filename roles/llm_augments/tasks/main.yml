@@ -1,0 +1,30 @@
+---
+# Augments that make Claude Code cheaper or smarter. Each is independent and
+# individually switchable — see defaults/main.yml.
+#
+# Split into one file per tool because their install mechanisms have nothing
+# in common: a Rust binary, an npm package, a Python CLI, and a plugin.
+#
+# import_tasks, not include_tasks: tags on a *dynamic* include gate only the
+# include itself, so `--tags rtk` would run the include and then skip every
+# task inside it. Static imports push their tags down.
+
+- name: llm_augments | rtk (token-compressing CLI proxy)
+  ansible.builtin.import_tasks: rtk.yml
+  when: llm_augment_rtk
+  tags: [rtk]
+
+- name: llm_augments | beads (agent issue tracker)
+  ansible.builtin.import_tasks: beads.yml
+  when: llm_augment_beads
+  tags: [beads]
+
+- name: llm_augments | graphify (codebase knowledge graph)
+  ansible.builtin.import_tasks: graphify.yml
+  when: llm_augment_graphify
+  tags: [graphify]
+
+- name: llm_augments | caveman (terse output style)
+  ansible.builtin.import_tasks: caveman.yml
+  when: llm_augment_caveman
+  tags: [caveman]
