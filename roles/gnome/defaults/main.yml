@@ -1,0 +1,23 @@
+---
+# GNOME settings are transplanted as raw `dconf dump` trees rather than
+# hand-converted to YAML. To capture a tree from another machine:
+#
+#   dconf dump /org/gnome/shell/ > dotfiles/gnome/shell.ini
+#
+# commit it, and converge here. A path with no matching file is skipped, so
+# this list can name trees before their files exist.
+gnome_dconf_trees:
+  - path: /org/gnome/shell/
+    file: shell.ini
+  - path: /org/gnome/desktop/
+    file: desktop.ini
+  - path: /org/gnome/settings-daemon/
+    file: settings-daemon.ini
+  - path: /org/gnome/mutter/
+    file: mutter.ini
+
+# Extensions available as apt packages. Anything from extensions.gnome.org
+# that is not packaged should be installed via the Extension Manager GUI once,
+# then captured in shell.ini (which carries enabled-extensions).
+gnome_extension_packages:
+  - gnome-shell-extension-manager

@@ -18,15 +18,17 @@ profile: full
 
 profiles:
   # Everything. The default.
-  full: [base, shell, fonts, node, neovim, claude, llm_augments]
+  full: [base, shell, git, fonts, node, neovim, claude, llm_augments, ghostty, gnome]
   # Editor + agent, no desktop bits. Good for servers and WSL.
-  coding: [base, shell, node, neovim, claude, llm_augments]
+  coding: [base, shell, git, node, neovim, claude, llm_augments]
   # Claude Code and its augments, no Neovim.
-  llm: [base, shell, node, claude, llm_augments]
+  llm: [base, shell, git, node, claude, llm_augments]
   # Editor only — no agent tooling at all.
-  editor: [base, shell, fonts, node, neovim]
+  editor: [base, shell, git, fonts, node, neovim]
+  # Terminal and desktop only — no toolchain.
+  desktop: [base, shell, git, fonts, ghostty, gnome]
   # Just enough to have a usable shell.
-  minimal: [base, shell]
+  minimal: [base, shell, git]
 
 active_roles: "{{ profiles[profile] }}"
 

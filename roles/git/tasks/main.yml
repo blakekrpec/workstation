@@ -1,0 +1,24 @@
+---
+# Global git identity was unset on this machine entirely, which is why every
+# commit needed an explicit -c user.name/-c user.email.
+
+- name: git | link ~/.gitconfig to the repo
+  ansible.builtin.include_role:
+    name: link
+  vars:
+    link_src: "{{ workstation_repo }}/dotfiles/git/gitconfig"
+    link_dest: "{{ workstation_home }}/.gitconfig"
+
+# ~/.gitconfig.local is deliberately NOT tracked: work machines need a
+# different email, and signing keys do not belong in a public repo.
+# dotfiles/git/gitconfig includes it if present.
+- name: git | ensure the machine-local override exists
+  ansible.builtin.copy:
+    dest: "{{ workstation_home }}/.gitconfig.local"
+    content: |
+      # Machine-local git overrides. Not tracked by the workstation repo.
+      # Put a work email or signing key here; it wins over ~/.gitconfig.
+      # [user]
+      #     email = you@work.example
+    mode: "0644"
+    force: false

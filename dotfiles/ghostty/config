@@ -1,0 +1,25 @@
+# Ghostty configuration.
+#
+# PLACEHOLDER — this is a minimal working config so the role has something to
+# link. Replace it wholesale with the setup from the work machine; nothing
+# here is precious.
+#
+# Reference: https://ghostty.org/docs/config/reference
+
+# Matches the Nerd Font installed by roles/fonts. Without a Nerd Font the
+# Neovim statusline and file icons render as ◆? diamonds.
+font-family = 0xProto Nerd Font
+font-size = 12
+
+theme = dark
+
+window-padding-x = 8
+window-padding-y = 8
+scrollback-limit = 100000
+
+# Neovim uses the terminal's cursor shape; keep it a block in normal mode.
+cursor-style = block
+cursor-style-blink = false
+
+copy-on-select = clipboard
+confirm-close-surface = false

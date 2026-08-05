@@ -1,0 +1,39 @@
+[user]
+	name = Blake Krpec
+	email = blake.krpec@yahoo.com
+
+[init]
+	defaultBranch = main
+
+[core]
+	editor = nvim
+	pager = less -FRX
+
+[pull]
+	# Never create a merge commit on pull; rebase or stop and say so.
+	rebase = true
+[push]
+	default = simple
+	autoSetupRemote = true
+
+[fetch]
+	prune = true
+
+[diff]
+	algorithm = histogram
+	colorMoved = default
+[merge]
+	conflictstyle = zdiff3
+
+[rerere]
+	enabled = true
+
+[alias]
+	s = status -sb
+	l = log --oneline --graph --decorate -20
+	unpushed = log --oneline @{upstream}..HEAD
+
+[include]
+	# Machine-local overrides (work email, signing keys). Untracked; wins over
+	# everything above because it is included last.
+	path = ~/.gitconfig.local

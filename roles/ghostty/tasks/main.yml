@@ -1,0 +1,27 @@
+---
+# apt_repository is deprecated in favour of deb822_repository (removal in
+# ansible-core 2.25), but deb822_repository has no `ppa:` shorthand — it needs
+# the launchpad URI and signing key spelled out by hand. Keeping the readable
+# version until the removal actually forces the change.
+- name: ghostty | add the community PPA
+  become: true
+  when: ghostty_use_ppa
+  ansible.builtin.apt_repository:
+    repo: "{{ ghostty_ppa }}"
+    state: present
+    update_cache: true
+
+- name: ghostty | install
+  become: true
+  ansible.builtin.apt:
+    name: ghostty
+    state: present
+
+# The whole config directory is linked, so adding themes or a shader later is
+# a commit rather than a playbook change.
+- name: ghostty | link ~/.config/ghostty to the repo
+  ansible.builtin.include_role:
+    name: link
+  vars:
+    link_src: "{{ workstation_repo }}/dotfiles/ghostty"
+    link_dest: "{{ workstation_home }}/.config/ghostty"

@@ -58,6 +58,9 @@
     - role: shell
       tags: [shell]
       when: "'shell' in active_roles"
+    - role: git
+      tags: [git]
+      when: "'git' in active_roles"
     - role: fonts
       tags: [fonts]
       when: "'fonts' in active_roles"
@@ -73,3 +76,9 @@
     - role: llm_augments
       tags: [llm_augments, augments]
       when: "'llm_augments' in active_roles"
+    - role: ghostty
+      tags: [ghostty]
+      when: "'ghostty' in active_roles"
+    - role: gnome
+      tags: [gnome]
+      when: "'gnome' in active_roles"
