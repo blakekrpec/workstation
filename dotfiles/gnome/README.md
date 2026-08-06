@@ -22,9 +22,20 @@ no file yet is skipped, so you can add the path before you have the dump.
 | File | Tree | Holds |
 |---|---|---|
 | `shell.ini` | `/org/gnome/shell/` | enabled extensions, favourites, per-extension config |
-| `desktop.ini` | `/org/gnome/desktop/` | keybindings, interface, fonts, wallpaper |
+| `desktop-interface.ini` | `/org/gnome/desktop/interface/` | theme, Yaru accent colour, fonts |
 | `settings-daemon.ini` | `/org/gnome/settings-daemon/` | media keys, power, custom shortcuts |
 | `mutter.ini` | `/org/gnome/mutter/` | window management, workspaces |
+
+Note the third row is `/org/gnome/desktop/interface/`, not `/org/gnome/desktop/`.
+The parent tree also holds `[background]` and `[screensaver]` `picture-uri`,
+which variety rewrites to a fresh hash-named path on every rotation — capturing
+it would churn this repo and make each converge reset the wallpaper. If you ever
+need something else from under `/org/gnome/desktop/` (window keybindings, say),
+add it as its own narrow subtree rather than widening this one.
+
+On GNOME 46 the accent colour is not `org.gnome.desktop.interface accent-color`
+— that key arrives in GNOME 47. Ubuntu expresses it through the Yaru variant, so
+blue + dark reads as `gtk-theme='Yaru-blue-dark'` and `icon-theme='Yaru-blue'`.
 
 ## Two things to watch
 

@@ -9,8 +9,15 @@
 gnome_dconf_trees:
   - path: /org/gnome/shell/
     file: shell.ini
-  - path: /org/gnome/desktop/
-    file: desktop.ini
+  # Scoped to interface/ on purpose — /org/gnome/desktop/ as a whole is NOT
+  # safe to capture on this machine. That tree also carries [background] and
+  # [screensaver] picture-uri, which variety rewrites to a fresh hash-named file
+  # every rotation. Committing the parent would churn the repo constantly, and
+  # each converge would dconf-load a stale path and reset the wallpaper out from
+  # under variety. interface/ holds the theme and Yaru accent and nothing
+  # volatile.
+  - path: /org/gnome/desktop/interface/
+    file: desktop-interface.ini
   - path: /org/gnome/settings-daemon/
     file: settings-daemon.ini
   - path: /org/gnome/mutter/
