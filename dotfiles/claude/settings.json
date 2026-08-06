@@ -1,5 +1,7 @@
 {
-  "theme": "dark",
+  "enabledPlugins": {
+    "caveman@caveman": true
+  },
   "extraKnownMarketplaces": {
     "caveman": {
       "source": {
@@ -8,7 +10,6 @@
       }
     }
   },
-  "enabledPlugins": {
-    "caveman@caveman": true
-  }
+  "theme": "dark",
+  "model": "opus"
 }

@@ -12,6 +12,9 @@
   register: neovim_installed
   changed_when: false
   failed_when: false
+  # Read-only, so run it even under --check. Without this the task is skipped,
+  # stdout is empty, and the dry run always claims it will reinstall.
+  check_mode: false
 
 - name: neovim | install {{ neovim_version }}
   # Reinstalls when the pin is bumped, not just when nvim is missing.

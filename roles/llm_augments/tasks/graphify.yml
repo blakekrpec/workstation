@@ -13,11 +13,10 @@
     name: pipx
     state: present
 
-- name: graphify | ensure pipx bin dir is on PATH for this run
-  ansible.builtin.command: pipx ensurepath
-  register: graphify_ensurepath
-  changed_when: "'added to' in graphify_ensurepath.stdout | default('')"
-
+# No `pipx ensurepath` here on purpose: it appends a PATH line to ~/.bashrc,
+# which this repo forbids (bashrc.d fragments own the shell environment).
+# dotfiles/bash/bashrc.d/10-path.sh already puts ~/.local/bin on PATH, and
+# every task below invokes the binaries by absolute path anyway.
 - name: graphify | install graphifyy
   ansible.builtin.command:
     cmd: pipx install graphifyy

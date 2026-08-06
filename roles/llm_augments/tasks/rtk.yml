@@ -10,11 +10,6 @@
       curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/refs/heads/master/install.sh | sh
     creates: "{{ workstation_home }}/.local/bin/rtk"
 
-- name: rtk | report version
-  ansible.builtin.command: "{{ workstation_home }}/.local/bin/rtk --version"
-  register: rtk_version
-  changed_when: false
-
 # `rtk init -g` writes a PreToolUse hook + RTK.md into the Claude Code config.
 # The CLAUDE.md in this repo imports RTK.md via @RTK.md. Guard on that import
 # line already being present in the symlinked CLAUDE.md to prevent re-appending

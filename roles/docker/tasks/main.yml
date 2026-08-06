@@ -6,12 +6,19 @@
     state: directory
     mode: '0755'
 
+# executable: /bin/bash is required — /bin/sh is dash on Ubuntu and has no
+# `pipefail`. Temp file + install so a failed fetch cannot leave a truncated
+# keyring that `creates:` would skip past on every later run.
 - name: docker | download and install Docker signing key
   become: true
   ansible.builtin.shell:
+    executable: /bin/bash
     cmd: |
       set -euo pipefail
-      curl -fsSL "{{ docker_keyring_url }}" | gpg --dearmor -o "{{ docker_keyring_path }}"
+      tmp="$(mktemp)"
+      trap 'rm -f "$tmp"' EXIT
+      curl -fsSL "{{ docker_keyring_url }}" | gpg --batch --yes --dearmor -o "$tmp"
+      install -m 0644 "$tmp" "{{ docker_keyring_path }}"
     creates: "{{ docker_keyring_path }}"
 
 - name: docker | add Docker deb822 apt source

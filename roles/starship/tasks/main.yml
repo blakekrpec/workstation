@@ -8,6 +8,9 @@
   register: starship_installed
   changed_when: false
   failed_when: false
+  # Read-only, so run it even under --check. Without this the task is skipped,
+  # stdout is empty, and the dry run always claims it will reinstall.
+  check_mode: false
 
 - name: starship | install {{ starship_version }}
   # Reinstalls when the pin is bumped, not just when starship is missing.
@@ -19,17 +22,43 @@
         dest: "/tmp/starship-{{ starship_version }}-{{ starship_arch }}.tar.gz"
         mode: '0644'
 
+    # The upstream tarball carries its CI builder's uid/gid (1001), which would
+    # leave a non-root-owned binary on root's PATH. Force root ownership.
     - name: starship | extract to {{ starship_install_dir }}
       become: true
       ansible.builtin.unarchive:
         src: "/tmp/starship-{{ starship_version }}-{{ starship_arch }}.tar.gz"
         dest: "{{ starship_install_dir }}"
         remote_src: true
+        owner: root
+        group: root
+        mode: "0755"
 
     - name: starship | clean up tarball
       ansible.builtin.file:
         path: "/tmp/starship-{{ starship_version }}-{{ starship_arch }}.tar.gz"
         state: absent
+
+# Runs outside the install block. Machines provisioned before the unarchive
+# gained owner/group still have the 1001:1001 binary on disk, and the block
+# above only re-extracts on a pin bump — so without this the bad ownership
+# would survive every converge until the next version bump.
+- name: starship | stat the installed binary
+  ansible.builtin.stat:
+    path: "{{ starship_install_dir }}/starship"
+  register: starship_binary
+
+# Guarded on the stat so a --check run on a machine without starship skips this
+# instead of failing against a binary the simulated install never wrote. A real
+# first install needs no fixup — the unarchive above already lands it root-owned.
+- name: starship | keep the binary root-owned
+  when: starship_binary.stat.exists
+  become: true
+  ansible.builtin.file:
+    path: "{{ starship_install_dir }}/starship"
+    owner: root
+    group: root
+    mode: "0755"
 
 - name: starship | verify the pinned version is what runs
   ansible.builtin.command: starship --version

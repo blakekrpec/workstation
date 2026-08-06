@@ -6,12 +6,23 @@
     state: directory
     mode: '0755'
 
+# executable: /bin/bash is required, not cosmetic — the shell module defaults to
+# /bin/sh, which is dash on Ubuntu, and dash has no `pipefail`. Without it the
+# task dies on the `set` line with "Illegal option -o pipefail".
+#
+# Building in a temp file and installing it only on success keeps a failed fetch
+# from leaving a truncated keyring behind: `creates:` would then skip the task
+# forever and apt would fail later with a confusing signature error.
 - name: chrome | download and install Google signing key
   become: true
   ansible.builtin.shell:
+    executable: /bin/bash
     cmd: |
       set -euo pipefail
-      curl -fsSL "{{ chrome_keyring_url }}" | gpg --dearmor -o "{{ chrome_keyring_path }}"
+      tmp="$(mktemp)"
+      trap 'rm -f "$tmp"' EXIT
+      curl -fsSL "{{ chrome_keyring_url }}" | gpg --batch --yes --dearmor -o "$tmp"
+      install -m 0644 "$tmp" "{{ chrome_keyring_path }}"
     creates: "{{ chrome_keyring_path }}"
 
 - name: chrome | add Google Chrome deb822 apt source
@@ -22,6 +33,7 @@
       Types: deb
       URIs: https://dl.google.com/linux/chrome/deb/
       Suites: stable
+      Components: main
       Architectures: {{ chrome_repo_arch }}
       Signed-By: {{ chrome_keyring_path }}
     mode: '0644'

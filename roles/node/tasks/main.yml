@@ -20,13 +20,22 @@
       nvm version default
   register: node_default
   changed_when: false
+  # Read-only, so run it even under --check. Without this the task is skipped
+  # and the parse below templates against an undefined stdout.
+  check_mode: false
 
 # Extract inside {{ }} rather than inline in `when:`. A bare `when:` string
 # mangles a filter chain containing a quoted regex — the guard silently
 # evaluated true and reinstalled Node on every run.
+#
+# default() sits *before* first(): regex_search returns None when there is no
+# match, and None|first raises before a trailing default could catch it. That
+# is the fresh-machine path — nvm is installed but has no default alias yet, so
+# `nvm version default` prints "N/A". The `true` makes default() treat that
+# None as missing.
 - name: node | parse installed major version
   ansible.builtin.set_fact:
-    node_default_major: "{{ node_default.stdout | regex_search('^v([0-9]+)', '\\1') | first | default('0') }}"
+    node_default_major: "{{ node_default.stdout | regex_search('^v([0-9]+)', '\\1') | default(['0'], true) | first }}"
 
 - name: node | install Node LTS and set it as default
   when: node_default_major | int < node_min_major | int

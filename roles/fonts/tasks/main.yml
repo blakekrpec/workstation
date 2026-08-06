@@ -7,6 +7,10 @@
   ansible.builtin.command: fc-list :family
   register: fonts_installed
   changed_when: false
+  # Read-only, so run it even under --check. Without this the task is skipped,
+  # the guard below sees no families, and the dry run tries to extract into a
+  # font directory it only pretended to create — a fatal --check.
+  check_mode: false
 
 - name: fonts | install {{ nerd_font_name }} Nerd Font
   when: nerd_font_name not in fonts_installed.stdout

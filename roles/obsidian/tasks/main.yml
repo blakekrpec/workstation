@@ -1,25 +1,57 @@
 ---
-- name: obsidian | check if already installed
-  ansible.builtin.stat:
-    path: /var/lib/dpkg/info/obsidian.list
+# The guard is the *installed package version*, not merely "is obsidian here at
+# all". A bare stat of /var/lib/dpkg/info/obsidian.list pins the machine to
+# whatever landed first: bumping obsidian_version in defaults would download
+# nothing and upgrade nothing, silently. That breaks the "pin, bump
+# deliberately" posture the neovim and starship roles follow.
+#
+# The .deb declares `Version: 1.12.7` — identical to obsidian_version — so a
+# string compare is enough; no version-sort needed.
+
+- name: obsidian | read installed version
+  ansible.builtin.command:
+    argv:
+      - dpkg-query
+      - --showformat=${Version}
+      - --show
+      - obsidian
   register: obsidian_installed
+  changed_when: false
+  # rc is 1 when the package is absent, which is a normal first-run state.
+  failed_when: false
+  # Read-only, so run it even under --check.
+  check_mode: false
 
-- name: obsidian | download .deb package
-  ansible.builtin.get_url:
-    url: "{{ obsidian_deb_url }}"
-    dest: "{{ obsidian_deb_path }}"
-    mode: '0644'
-  when: not obsidian_installed.stat.exists
+- name: obsidian | install {{ obsidian_version }}
+  when: obsidian_version != (obsidian_installed.stdout | default('') | trim)
+  block:
+    - name: obsidian | download .deb package
+      ansible.builtin.get_url:
+        url: "{{ obsidian_deb_url }}"
+        dest: "{{ obsidian_deb_path }}"
+        mode: '0644'
 
-- name: obsidian | install from .deb
-  become: true
-  ansible.builtin.apt:
-    deb: "{{ obsidian_deb_path }}"
-    state: present
-  when: not obsidian_installed.stat.exists
+    - name: obsidian | install from .deb
+      become: true
+      ansible.builtin.apt:
+        deb: "{{ obsidian_deb_path }}"
+        state: present
 
-- name: obsidian | clean up downloaded .deb
-  ansible.builtin.file:
-    path: "{{ obsidian_deb_path }}"
-    state: absent
-  when: not obsidian_installed.stat.exists
+    - name: obsidian | clean up downloaded .deb
+      ansible.builtin.file:
+        path: "{{ obsidian_deb_path }}"
+        state: absent
+
+# Turns a silent reinstall-every-run loop into a loud failure if the .deb ever
+# declares a version that differs from the pin. Plain command, so --check skips
+# it rather than asserting against an install it only simulated.
+- name: obsidian | verify the pinned version is what is installed
+  ansible.builtin.command:
+    argv:
+      - dpkg-query
+      - --showformat=${Version}
+      - --show
+      - obsidian
+  register: obsidian_check
+  changed_when: false
+  failed_when: obsidian_version != (obsidian_check.stdout | trim)

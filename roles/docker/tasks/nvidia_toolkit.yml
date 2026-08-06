@@ -1,25 +1,37 @@
 ---
+# executable: /bin/bash is required — /bin/sh is dash on Ubuntu and has no
+# `pipefail`. Both tasks below build in a temp file and install it only on
+# success; the plain `> dest` version was worse than the keyring case, because
+# the shell creates the redirect target *before* curl runs, so an failed fetch
+# left an empty .list that `creates:` skipped forever.
+#
+# retries/delay are deliberately absent: Ansible ignores them without a matching
+# `until:`, so the pair here was decoration rather than retry behaviour.
 - name: nvidia-toolkit | download and install NVIDIA signing key
   become: true
   ansible.builtin.shell:
+    executable: /bin/bash
     cmd: |
       set -euo pipefail
-      curl -fsSL "{{ nvidia_keyring_url }}" | gpg --dearmor -o "{{ nvidia_keyring_path }}"
+      tmp="$(mktemp)"
+      trap 'rm -f "$tmp"' EXIT
+      curl -fsSL "{{ nvidia_keyring_url }}" | gpg --batch --yes --dearmor -o "$tmp"
+      install -m 0644 "$tmp" "{{ nvidia_keyring_path }}"
     creates: "{{ nvidia_keyring_path }}"
-  retries: 3
-  delay: 2
 
 - name: nvidia-toolkit | fetch and install nvidia-container-toolkit.list
   become: true
   ansible.builtin.shell:
+    executable: /bin/bash
     cmd: |
       set -euo pipefail
-      curl -fsSL "{{ nvidia_repo_list_url }}" | \
-        sed 's#deb https://#deb [signed-by={{ nvidia_keyring_path }}] https://#' \
-        > /etc/apt/sources.list.d/nvidia-container-toolkit.list
+      tmp="$(mktemp)"
+      trap 'rm -f "$tmp"' EXIT
+      curl -fsSL "{{ nvidia_repo_list_url }}" \
+        | sed 's#deb https://#deb [signed-by={{ nvidia_keyring_path }}] https://#' \
+        > "$tmp"
+      install -m 0644 "$tmp" /etc/apt/sources.list.d/nvidia-container-toolkit.list
     creates: /etc/apt/sources.list.d/nvidia-container-toolkit.list
-  retries: 3
-  delay: 2
 
 - name: nvidia-toolkit | update apt cache
   become: true

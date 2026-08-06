@@ -2,7 +2,13 @@
 # Starship is installed from GitHub releases at a pinned version, mirroring the
 # neovim role's "pin, bump deliberately" approach. The official curl | sh
 # installer is avoided per AGENTS.md posture.
-starship_version: v1.26.0
+#
+# Keep this bare — no leading "v". Both guards in tasks/main.yml substring-match
+# it against `starship --version`, which prints "starship 1.26.0" without the v.
+# The release *tag* does carry one, so the URL below adds it back. (Neovim pins
+# with the v because `nvim --version` prints "NVIM v0.11.x"; don't copy that
+# here.)
+starship_version: "1.26.0"
 starship_install_dir: /usr/local/bin
 starship_arch: x86_64-unknown-linux-gnu
-starship_tarball_url: "https://github.com/starship/starship/releases/download/{{ starship_version }}/starship-{{ starship_arch }}.tar.gz"
+starship_tarball_url: "https://github.com/starship/starship/releases/download/v{{ starship_version }}/starship-{{ starship_arch }}.tar.gz"
