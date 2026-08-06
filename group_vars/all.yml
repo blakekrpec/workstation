@@ -6,7 +6,7 @@ workstation_home: "{{ ansible_facts.env.HOME }}"
 
 # Where this repo is checked out. Symlinks point into it, so moving the
 # checkout means re-running the playbook.
-workstation_repo: "{{ workstation_home }}/src/workstation"
+workstation_repo: "{{ workstation_home }}/workstation"
 
 # Real files displaced by a symlink are moved here (once) instead of deleted.
 workstation_backup_dir: "{{ workstation_home }}/.workstation-backup"

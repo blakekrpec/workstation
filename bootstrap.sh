@@ -4,8 +4,8 @@
 # Installs Ansible, pulls the required collections, then runs the single
 # playbook. Everything else about this machine is described by roles, not bash.
 #
-#   git clone https://github.com/blakekrpec/workstation.git ~/src/workstation
-#   ~/src/workstation/bootstrap.sh
+#   git clone https://github.com/blakekrpec/workstation.git ~/workstation
+#   ~/workstation/bootstrap.sh
 #
 # Flags:
 #   --profile <name>   which set of roles to converge (default: full)
@@ -77,5 +77,11 @@ fi
 info "installing galaxy collections"
 ansible-galaxy collection install -r requirements.yml >/dev/null
 
+# Do NOT run this script under `sudo`. The playbook runs as you and escalates
+# per task via become. Under sudo, HOME is /root: workstation_repo resolves under
+# /root and site.yml's own assert stops the run, every dotfile symlink would land
+# in /root, the docker group would get root instead of you, and the gnome role
+# would talk to root's dconf rather than your session bus. It would not even save
+# a prompt — you would type the password at sudo instead of here.
 info "running site.yml (sudo password prompt follows)"
 exec ansible-playbook site.yml --ask-become-pass "${PASSTHRU[@]}"

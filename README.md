@@ -13,13 +13,17 @@ Claude Code from [`neovim-config`](https://github.com/blakekrpec/neovim-config)'
 ## Getting started
 
 ```bash
-git clone https://github.com/blakekrpec/workstation.git ~/src/workstation
-~/src/workstation/bootstrap.sh
+git clone https://github.com/blakekrpec/workstation.git ~/workstation
+~/workstation/bootstrap.sh
 ```
 
 That's the whole install. `bootstrap.sh` installs `ansible-core`, pulls the
-Galaxy collections, and runs `site.yml`. It will prompt once for your sudo
-password.
+Galaxy collections, and runs `site.yml`. It prompts once for your sudo password.
+
+**Do not run it with `sudo`.** The playbook runs as you and escalates per task.
+Under `sudo`, `HOME` is `/root`, so `workstation_repo` resolves under `/root` and
+`site.yml`'s own assert stops the run — and it would not save a prompt anyway,
+since you would type the password at `sudo` instead.
 
 The checkout path matters — dotfiles are symlinked out of it, and `site.yml`
 refuses to run if the repo isn't where `group_vars/all.yml` says it is.
@@ -53,7 +57,7 @@ This repo uses a **two-profile model** designed for the work/personal machine sp
 
 | Profile | Use Case | Roles |
 |---|---|---|
-| `dev` | **Work machine** — layer your visual/editor/desktop setup on top of work's own ansible (which provides opencode, docker, internal tools). | base, shell, git, fonts, node, neovim, starship, chrome, obsidian, ghostty, gnome |
+| `dev` | **Work machine** — layer your visual/editor/desktop setup on top of work's own ansible (which provides opencode, docker, internal tools). | base, shell, git, fonts, node, neovim, starship, chrome, obsidian, ghostty, gnome, nvidia |
 | `full` *(default)* | **Personal machine** — everything. `dev` plus the tools work provides its own way. | `dev` + claude, llm_augments, docker |
 
 Profiles are defined in `group_vars/all.yml`. `--tags` selects *within* the active profile; `--only` ignores the profile entirely and runs the role(s) you name (comma-separated or repeated flags).
@@ -84,7 +88,7 @@ See `AGENTS.md` for the "which profile?" decision tree when adding new roles.
 | `node` | nvm + Node LTS (Claude Code needs v22+ and must be nvm-managed to self-update) |
 | `neovim` | pinned Neovim release + clones `neovim-config` to `~/.config/nvim` |
 | `starship` | Starship cross-shell prompt, pinned release, Rose Pine theme |
-| `claude` | Claude Code CLI + symlinks `settings.json`, `CLAUDE.md`, `graphify.md`, `skills/`, `agents/`, `commands/` |
+| `claude` | Claude Code CLI + symlinks `CLAUDE.md`, `graphify.md`, `skills/`, `agents/`, `commands/`; merges managed keys into `settings.json` |
 | `llm_augments` | rtk, beads, graphify, caveman |
 | `chrome` | Google Chrome stable via official deb822 apt source |
 | `obsidian` | Obsidian from GitHub releases (.deb), pinned version |
@@ -115,9 +119,16 @@ llm_augment_caveman: false
 **caveman is opinionated**: it changes how every reply reads. Turn it off with
 the flag above, or per-machine with `claude plugin disable caveman`.
 
-Because `~/.claude/settings.json` is a symlink into this repo, `claude plugin
-install` writes plugin state straight into git — so marketplaces and enabled
-plugins reproduce on the next machine with no extra work.
+Marketplaces and enabled plugins reproduce on the next machine because they live
+in `dotfiles/claude/settings.managed.json`, which the role merges into
+`~/.claude/settings.json`. That file is deliberately **not** symlinked: Claude
+Code persists runtime preferences by writing it — `model` from `/model`, `theme`
+from `/config` — so a symlink turned every model switch into a diff in this repo.
+Only the managed keys are tracked; everything else stays machine-local.
+
+After editing `settings.managed.json`, run `./bootstrap.sh --only claude` to
+apply it. Merging is additive: removing a key from that file does not remove it
+from machines that already have it — set it to `false` instead, or prune by hand.
 
 ---
 
@@ -154,9 +165,10 @@ setup, and both are bumped deliberately:
 That directory mixes config with credentials and session transcripts
 (`.credentials.json`, `projects/`, `sessions/`, `history.jsonl`,
 `shell-snapshots/`). `roles/claude` symlinks **only** the paths listed in its
-`defaults/main.yml`: `settings.json`, `CLAUDE.md`, `graphify.md`, `skills/`,
-`agents/`, `commands/`. Never link the directory itself. `.gitignore` denies the
-state paths as a second line of defence.
+`defaults/main.yml`: `CLAUDE.md`, `graphify.md`, `skills/`, `agents/`,
+`commands/` — plus `settings.json`, which is merged rather than linked. Never
+link the directory itself. `.gitignore` denies the state paths as a second line
+of defence.
 
 Tool integrations like rtk and graphify use an **import-based pattern**:
 `CLAUDE.md` contains `@RTK.md` and `@graphify.md` import lines; the tool-specific
