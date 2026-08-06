@@ -71,9 +71,21 @@
   loop: "{{ gnome_extensions_from_ego }}"
   when: gnome_extensions_from_ego | length > 0
 
-# `dconf load` always exits 0 and reports nothing, so it would show as changed
-# on every run. Diff the live tree against the file first and only load when
-# they differ — that keeps the playbook honest about what it touched.
+# `dconf load` always exits 0 and reports nothing, so a bare load would show as
+# changed on every run. The obvious guard — diff the live dump against the file
+# and load only when they differ — is wrong, and looped forever:
+#
+#   dconf load MERGES. It never removes a key that is absent from the file.
+#
+# So any key the desktop writes for itself that the dump does not carry (ding
+# writing [extensions/ding] check-x11wayland after a session switch, for one)
+# makes the two sides differ permanently. The load runs, cannot remove the extra
+# key, and the next converge differs again — `changed` on every run, forever.
+#
+# Compare the dump before and after the load instead. That asks the question
+# that actually matters — "did applying this file alter anything?" — and is
+# immune to extra live keys, so these .ini files stay a curated subset rather
+# than needing to track every key GNOME invents at runtime.
 - name: gnome | apply dconf trees
   ansible.builtin.shell:
     executable: /bin/bash
@@ -82,8 +94,10 @@
       f="{{ workstation_repo }}/dotfiles/gnome/{{ item.file }}"
       # A tree listed but not yet captured is simply skipped.
       [ -f "$f" ] || exit 0
-      if ! diff -q <(dconf dump "{{ item.path }}") "$f" >/dev/null 2>&1; then
-        dconf load "{{ item.path }}" < "$f"
+      before="$(dconf dump "{{ item.path }}")"
+      dconf load "{{ item.path }}" < "$f"
+      after="$(dconf dump "{{ item.path }}")"
+      if [ "$before" != "$after" ]; then
         echo WORKSTATION_CHANGED
       fi
   register: gnome_dconf

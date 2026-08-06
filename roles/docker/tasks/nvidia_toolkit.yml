@@ -32,9 +32,16 @@
         > "$tmp"
       install -m 0644 "$tmp" /etc/apt/sources.list.d/nvidia-container-toolkit.list
     creates: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+  register: nvidia_repo_list
 
-- name: nvidia-toolkit | update apt cache
+# Guarded on the repo definition actually changing, the same way
+# roles/docker/tasks/main.yml guards its own cache update. An unconditional
+# `update_cache: true` refreshes the cache on every converge, and the apt module
+# reports that refresh as changed — so the run never settles at changed=0 even
+# though nothing about the machine differs.
+- name: nvidia-toolkit | update apt cache if the repo changed
   become: true
+  when: nvidia_repo_list is changed
   ansible.builtin.apt:
     update_cache: true
 
