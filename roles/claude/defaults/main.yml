@@ -1,7 +1,9 @@
 ---
 # Everything else under ~/.claude is state or secrets — never managed here.
+#
+# settings.json is deliberately absent: Claude Code writes runtime preferences
+# into it, so it is merged rather than symlinked. See tasks/main.yml.
 claude_linked_paths:
-  - settings.json
   - CLAUDE.md
   - graphify.md
   - skills

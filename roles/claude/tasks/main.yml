@@ -30,6 +30,59 @@
       . "$NVM_DIR/nvm.sh"
       npm install -g @anthropic-ai/claude-code
 
+# settings.json is merged, not symlinked. Claude Code persists runtime prefs by
+# writing this exact path — `model` from /model, `theme` from /config — and it
+# rewrites the whole document, reordering keys as it goes. Symlinked, that turned
+# every model switch into a diff in this repo. So the repo owns a *subset* of
+# keys (dotfiles/claude/settings.managed.json) and everything else on disk is
+# machine-local: model, theme, and anything else Claude Code decides to persist.
+- name: claude | read any existing settings.json
+  ansible.builtin.slurp:
+    path: "{{ workstation_home }}/.claude/settings.json"
+  register: claude_settings_existing
+  # Absent on a fresh machine, which is normal.
+  failed_when: false
+
+- name: claude | inspect settings.json
+  ansible.builtin.stat:
+    path: "{{ workstation_home }}/.claude/settings.json"
+    follow: false
+  register: claude_settings_stat
+
+# Machines converged by an earlier version of this role have the path symlinked
+# into the repo. The link has to go before the merge below: ansible.builtin.copy
+# follows symlinks, so writing through it would land the merged result straight
+# back in the repo — the exact thing this is undoing. The slurp above already
+# captured the old content, so current model/theme survive into the real file.
+- name: claude | replace a legacy symlinked settings.json with a real file
+  when: claude_settings_stat.stat.islnk | default(false)
+  ansible.builtin.file:
+    path: "{{ workstation_home }}/.claude/settings.json"
+    state: absent
+
+# Comparing parsed dicts rather than file bytes matters: Claude Code writes its
+# own key order, so a byte comparison would rewrite the file on every converge
+# and report changed forever.
+#
+# The islnk/exists arms are not redundant with the dict comparison — they are
+# required. When the managed keys are already present and correct, the merged
+# dict equals the current one, so the comparison alone is false; on the run that
+# removes a legacy symlink that would delete settings.json and never write it
+# back.
+- name: claude | merge managed keys into settings.json
+  when: >-
+    claude_settings_merged != claude_settings_current
+    or (claude_settings_stat.stat.islnk | default(false))
+    or (not claude_settings_stat.stat.exists)
+  vars:
+    claude_settings_current: "{{ (claude_settings_existing.content | b64decode | from_json) if (claude_settings_existing.content is defined) else {} }}"
+    claude_settings_managed: "{{ lookup('file', workstation_repo ~ '/dotfiles/claude/settings.managed.json') | from_json }}"
+    claude_settings_merged: "{{ claude_settings_current | combine(claude_settings_managed, recursive=true) }}"
+  ansible.builtin.copy:
+    dest: "{{ workstation_home }}/.claude/settings.json"
+    content: "{{ claude_settings_merged | to_nice_json }}\n"
+    mode: "0600"
+
 # Whole directories are linked, not their contents — so adding a skill,
 # agent or command is a single commit with no playbook run.
 - name: claude | link managed config into ~/.claude
