@@ -4,6 +4,10 @@
 *.retry
 __pycache__/
 
+# Version bump state/cache
+.version-bump-state.json
+.version-bump-backup/
+
 # Claude Code's project-scoped settings for *this* repo — machine-local
 # permissions, not workstation config.
 /.claude/

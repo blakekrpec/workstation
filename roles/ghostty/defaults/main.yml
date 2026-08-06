@@ -1,6 +1,4 @@
 ---
-# Ghostty is in the official Ubuntu repos from 26.04 onward. On 24.04 the
-# community PPA is the maintained route — https://github.com/mkasberg/ghostty-ubuntu
-# When this machine moves to 26.04+, drop the PPA and set ghostty_use_ppa: false.
-ghostty_use_ppa: true
-ghostty_ppa: "ppa:mkasberg/ghostty-ubuntu"
+# Ghostty is installed via snap (classic confinement for full system access).
+# The snap is the officially supported route and receives rapid updates.
+ghostty_snap_classic: true

@@ -9,6 +9,48 @@
     state: present
   when: gnome_extension_packages | length > 0
 
+- name: gnome | ensure extensions directory exists
+  ansible.builtin.file:
+    path: "{{ workstation_home }}/.local/share/gnome-shell/extensions"
+    state: directory
+    mode: '0755'
+
+- name: gnome | check if EGO extensions are already installed
+  ansible.builtin.stat:
+    path: "{{ workstation_home }}/.local/share/gnome-shell/extensions/{{ item.uuid }}"
+  loop: "{{ gnome_extensions_from_ego }}"
+  register: ego_extensions_stat
+  when: gnome_extensions_from_ego | length > 0
+
+- name: gnome | download extensions from extensions.gnome.org
+  ansible.builtin.get_url:
+    url: "https://extensions.gnome.org/extension-data/{{ item.item.uuid | replace('@', '') }}.v{{ item.item.version }}.shell-extension.zip"
+    dest: "/tmp/{{ item.item.uuid }}.v{{ item.item.version }}.zip"
+    mode: '0644'
+  loop: "{{ ego_extensions_stat.results }}"
+  when:
+    - gnome_extensions_from_ego | length > 0
+    - not item.stat.exists
+  loop_control:
+    label: "{{ item.item.uuid }}"
+
+- name: gnome | install extensions via gnome-extensions
+  ansible.builtin.command:
+    cmd: "gnome-extensions install --force /tmp/{{ item.item.uuid }}.v{{ item.item.version }}.zip"
+  loop: "{{ ego_extensions_stat.results }}"
+  when:
+    - gnome_extensions_from_ego | length > 0
+    - not item.stat.exists
+  loop_control:
+    label: "{{ item.item.uuid }}"
+
+- name: gnome | clean up downloaded extension zips
+  ansible.builtin.file:
+    path: "/tmp/{{ item.uuid }}.v{{ item.version }}.zip"
+    state: absent
+  loop: "{{ gnome_extensions_from_ego }}"
+  when: gnome_extensions_from_ego | length > 0
+
 # `dconf load` always exits 0 and reports nothing, so it would show as changed
 # on every run. Diff the live tree against the file first and only load when
 # they differ — that keeps the playbook honest about what it touched.

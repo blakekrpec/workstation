@@ -1,0 +1,67 @@
+---
+- name: docker | ensure keyrings directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: docker | download and install Docker signing key
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+      curl -fsSL "{{ docker_keyring_url }}" | gpg --dearmor -o "{{ docker_keyring_path }}"
+    creates: "{{ docker_keyring_path }}"
+
+- name: docker | add Docker deb822 apt source
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/docker.sources
+    content: |
+      Types: deb
+      URIs: https://download.docker.com/linux/ubuntu
+      Suites: {{ ansible_facts.distribution_release }}
+      Architectures: {{ docker_repo_arch }}
+      Signed-By: {{ docker_keyring_path }}
+      Components: stable
+    mode: '0644'
+  register: docker_repo
+
+- name: docker | update apt cache if repo changed
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: docker_repo is changed
+
+- name: docker | install Docker packages
+  become: true
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+
+- name: docker | add user to docker group
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_facts.user_id }}"
+    groups: docker
+    append: true
+
+- name: docker | nvidia container toolkit tasks
+  ansible.builtin.include_tasks: nvidia_toolkit.yml
+  when: nvidia_toolkit_enabled | bool
+
+- name: docker | ensure /etc/docker directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    mode: '0755'
+
+- name: docker | template daemon.json
+  become: true
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+  notify: restart docker

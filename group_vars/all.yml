@@ -12,23 +12,19 @@ workstation_repo: "{{ workstation_home }}/src/workstation"
 workstation_backup_dir: "{{ workstation_home }}/.workstation-backup"
 
 # --- profiles --------------------------------------------------------------
-# One playbook, selected with a flag:  ./bootstrap.sh --profile coding
-# Tags still work for surgical runs:   ./bootstrap.sh --tags claude
+# One playbook, two profiles: dev (work layer) and full (personal).
+# ./bootstrap.sh --profile dev         # at work: layer on top of work's ansible
+# ./bootstrap.sh                       # personal machine: everything (default: full)
+# ./bootstrap.sh --only ghostty,gnome  # cherry-pick specific roles
 profile: full
 
 profiles:
-  # Everything. The default.
-  full: [base, shell, git, fonts, node, neovim, claude, llm_augments, ghostty, gnome]
-  # Editor + agent, no desktop bits. Good for servers and WSL.
-  coding: [base, shell, git, node, neovim, claude, llm_augments]
-  # Claude Code and its augments, no Neovim.
-  llm: [base, shell, git, node, claude, llm_augments]
-  # Editor only — no agent tooling at all.
-  editor: [base, shell, git, fonts, node, neovim]
-  # Terminal and desktop only — no toolchain.
-  desktop: [base, shell, git, fonts, ghostty, gnome]
-  # Just enough to have a usable shell.
-  minimal: [base, shell, git]
+  # Work layer — the visual/editor/dev setup you carry on top of work's own
+  # ansible (which provides opencode, docker, etc.). Everything here is also
+  # individually --only-able for selective runs.
+  dev: [base, shell, git, fonts, node, neovim, starship, chrome, obsidian, ghostty, gnome]
+  # Personal machine — dev plus the tools work provides its own way.
+  full: [base, shell, git, fonts, node, neovim, starship, chrome, obsidian, ghostty, gnome, claude, llm_augments, docker]
 
 active_roles: "{{ profiles[profile] }}"
 

@@ -1,0 +1,4 @@
+---
+chrome_keyring_url: https://dl.google.com/linux/linux_signing_key.pub
+chrome_keyring_path: /etc/apt/keyrings/google-chrome.gpg
+chrome_repo_arch: amd64

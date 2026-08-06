@@ -1,8 +1,8 @@
 # workstation
 
 Ansible-managed Ubuntu workstation. One playbook, one repo: Neovim, Node,
-Claude Code and its augments, fonts, shell — and, as they land, Ghostty, GNOME
-and the rest of the desktop.
+Claude Code and its augments, fonts, shell, Starship, Ghostty, GNOME, Docker,
+Chrome, Obsidian — everything needed for a reproducible dev environment.
 
 Ubuntu is first class. Windows is a deliberate bolt-on: it gets Neovim and
 Claude Code from [`neovim-config`](https://github.com/blakekrpec/neovim-config)'s
@@ -32,9 +32,11 @@ fragments load.
 ## Running it
 
 ```bash
-./bootstrap.sh                       # everything (profile: full)
-./bootstrap.sh --profile coding      # a named subset
+./bootstrap.sh                       # everything (profile: full, default)
+./bootstrap.sh --profile dev         # work layer (visual/editor setup)
 ./bootstrap.sh --only claude         # exactly one role, ignoring the profile
+./bootstrap.sh --only ghostty,neovim,gnome  # multiple roles (comma-separated)
+./bootstrap.sh --only ghostty --only neovim # or repeated --only flags
 ./bootstrap.sh --list                # show the profiles
 ./bootstrap.sh --check --diff        # dry run
 ```
@@ -47,19 +49,27 @@ in a role, not normal drift.
 
 ### Profiles
 
-| Profile | Roles |
-|---|---|
-| `full` *(default)* | base, shell, fonts, node, neovim, claude, llm_augments |
-| `coding` | base, shell, node, neovim, claude, llm_augments — no desktop bits; good for servers and WSL |
-| `llm` | base, shell, node, claude, llm_augments — agent tooling, no Neovim |
-| `editor` | base, shell, fonts, node, neovim — no agent tooling |
-| `minimal` | base, shell |
+This repo uses a **two-profile model** designed for the work/personal machine split:
 
-Profiles are defined in one place, `group_vars/all.yml`. Add one there and it
-is immediately available to `--profile`.
+| Profile | Use Case | Roles |
+|---|---|---|
+| `dev` | **Work machine** — layer your visual/editor/desktop setup on top of work's own ansible (which provides opencode, docker, internal tools). | base, shell, git, fonts, node, neovim, starship, chrome, obsidian, ghostty, gnome |
+| `full` *(default)* | **Personal machine** — everything. `dev` plus the tools work provides its own way. | `dev` + claude, llm_augments, docker |
 
-`--tags` selects *within* the active profile; `--only` ignores the profile
-entirely and runs the single role you name.
+Profiles are defined in `group_vars/all.yml`. `--tags` selects *within* the active profile; `--only` ignores the profile entirely and runs the role(s) you name (comma-separated or repeated flags).
+
+**At work:**
+```bash
+./bootstrap.sh --profile dev                # full visual/editor layer
+./bootstrap.sh --only ghostty,gnome         # just desktop bits
+```
+
+**On your personal machine:**
+```bash
+./bootstrap.sh                              # everything (default: full)
+```
+
+See `AGENTS.md` for the "which profile?" decision tree when adding new roles.
 
 ---
 
@@ -69,11 +79,18 @@ entirely and runs the single role you name.
 |---|---|
 | `base` | apt packages: build tools, ripgrep, fd, jq, clipboard, python3-venv |
 | `shell` | `~/.bashrc.d/` fragments + the one managed loader block in `~/.bashrc` |
+| `git` | `~/.gitconfig` + untracked `~/.gitconfig.local` for machine-specific overrides |
 | `fonts` | 0xProto Nerd Font, per-user, no sudo |
 | `node` | nvm + Node LTS (Claude Code needs v22+ and must be nvm-managed to self-update) |
 | `neovim` | pinned Neovim release + clones `neovim-config` to `~/.config/nvim` |
-| `claude` | Claude Code CLI + symlinks `settings.json`, `CLAUDE.md`, `skills/`, `agents/`, `commands/` |
+| `starship` | Starship cross-shell prompt, pinned release, Rose Pine theme |
+| `claude` | Claude Code CLI + symlinks `settings.json`, `CLAUDE.md`, `graphify.md`, `skills/`, `agents/`, `commands/` |
 | `llm_augments` | rtk, beads, graphify, caveman |
+| `chrome` | Google Chrome stable via official deb822 apt source |
+| `obsidian` | Obsidian from GitHub releases (.deb), pinned version |
+| `docker` | Docker CE + nvidia-container-toolkit with runtime configured |
+| `ghostty` | Ghostty terminal via snap (classic), Rose Pine theme with transparency |
+| `gnome` | GNOME extensions (Vitals from extensions.gnome.org), dconf settings, keybinds, favorite apps |
 
 `roles/link` is a helper, not a top-level role — it symlinks a path and moves
 anything real it displaces to `~/.workstation-backup/` (mirroring its location
@@ -137,8 +154,15 @@ setup, and both are bumped deliberately:
 That directory mixes config with credentials and session transcripts
 (`.credentials.json`, `projects/`, `sessions/`, `history.jsonl`,
 `shell-snapshots/`). `roles/claude` symlinks **only** the paths listed in its
-`defaults/main.yml`. Never link the directory itself. `.gitignore` denies the
+`defaults/main.yml`: `settings.json`, `CLAUDE.md`, `graphify.md`, `skills/`,
+`agents/`, `commands/`. Never link the directory itself. `.gitignore` denies the
 state paths as a second line of defence.
+
+Tool integrations like rtk and graphify use an **import-based pattern**:
+`CLAUDE.md` contains `@RTK.md` and `@graphify.md` import lines; the tool-specific
+content lives in separate files that get overwritten (not appended) on updates.
+This prevents duplicate content when running the playbook on a second machine
+where the committed files already carry the imports.
 
 ---
 
@@ -151,7 +175,8 @@ bootstrap.sh              the only shell script here
 group_vars/all.yml        profiles, pinned versions, paths
 host_vars/<hostname>.yml  per-machine overrides, loaded by real hostname
 dotfiles/                 symlink sources, mirroring $HOME
-roles/                    base shell fonts node neovim claude llm_augments + link
+roles/                    base shell git fonts node neovim claude llm_augments
+                          chrome obsidian docker ghostty gnome (+ link helper)
 ```
 
 ## Related repos

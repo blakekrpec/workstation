@@ -16,14 +16,18 @@
   changed_when: false
 
 # `rtk init -g` writes a PreToolUse hook + RTK.md into the Claude Code config.
-# It is not idempotent-by-design, so gate it on the marker file it produces.
-- name: rtk | check for the global hook
-  ansible.builtin.stat:
-    path: "{{ workstation_home }}/.claude/RTK.md"
-  register: rtk_hook
+# The CLAUDE.md in this repo imports RTK.md via @RTK.md. Guard on that import
+# line already being present in the symlinked CLAUDE.md to prevent re-appending
+# on a second machine where the committed file already carries the import.
+- name: rtk | check if CLAUDE.md already has @RTK.md import
+  ansible.builtin.shell:
+    cmd: grep -qF '@RTK.md' "{{ workstation_home }}/.claude/CLAUDE.md"
+  register: rtk_import_check
+  failed_when: false
+  changed_when: false
   when: rtk_install_hook
 
 - name: rtk | install the Claude Code hook
-  when: rtk_install_hook and not rtk_hook.stat.exists
+  when: rtk_install_hook and rtk_import_check.rc != 0
   ansible.builtin.command:
     cmd: "{{ workstation_home }}/.local/bin/rtk init -g"

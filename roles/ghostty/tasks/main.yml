@@ -1,20 +1,9 @@
 ---
-# apt_repository is deprecated in favour of deb822_repository (removal in
-# ansible-core 2.25), but deb822_repository has no `ppa:` shorthand — it needs
-# the launchpad URI and signing key spelled out by hand. Keeping the readable
-# version until the removal actually forces the change.
-- name: ghostty | add the community PPA
+- name: ghostty | install via snap
   become: true
-  when: ghostty_use_ppa
-  ansible.builtin.apt_repository:
-    repo: "{{ ghostty_ppa }}"
-    state: present
-    update_cache: true
-
-- name: ghostty | install
-  become: true
-  ansible.builtin.apt:
+  community.general.snap:
     name: ghostty
+    classic: "{{ ghostty_snap_classic }}"
     state: present
 
 # The whole config directory is linked, so adding themes or a shader later is

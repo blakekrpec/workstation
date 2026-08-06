@@ -1,0 +1,49 @@
+---
+- name: nvidia-toolkit | download and install NVIDIA signing key
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+      curl -fsSL "{{ nvidia_keyring_url }}" | gpg --dearmor -o "{{ nvidia_keyring_path }}"
+    creates: "{{ nvidia_keyring_path }}"
+  retries: 3
+  delay: 2
+
+- name: nvidia-toolkit | fetch and install nvidia-container-toolkit.list
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      set -euo pipefail
+      curl -fsSL "{{ nvidia_repo_list_url }}" | \
+        sed 's#deb https://#deb [signed-by={{ nvidia_keyring_path }}] https://#' \
+        > /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    creates: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+  retries: 3
+  delay: 2
+
+- name: nvidia-toolkit | update apt cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: nvidia-toolkit | install nvidia-container-toolkit
+  become: true
+  ansible.builtin.apt:
+    name: "nvidia-container-toolkit={{ nvidia_toolkit_version }}"
+    state: present
+
+- name: nvidia-toolkit | check if daemon.json already has nvidia runtime
+  become: true
+  ansible.builtin.slurp:
+    path: /etc/docker/daemon.json
+  register: daemon_json_slurp
+  failed_when: false
+
+- name: nvidia-toolkit | configure nvidia runtime if not present
+  become: true
+  ansible.builtin.command:
+    cmd: nvidia-ctk runtime configure --runtime=docker
+  when: >
+    daemon_json_slurp.content is not defined or
+    'nvidia' not in (daemon_json_slurp.content | b64decode)
+  notify: restart docker

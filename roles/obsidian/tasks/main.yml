@@ -1,0 +1,25 @@
+---
+- name: obsidian | check if already installed
+  ansible.builtin.stat:
+    path: /var/lib/dpkg/info/obsidian.list
+  register: obsidian_installed
+
+- name: obsidian | download .deb package
+  ansible.builtin.get_url:
+    url: "{{ obsidian_deb_url }}"
+    dest: "{{ obsidian_deb_path }}"
+    mode: '0644'
+  when: not obsidian_installed.stat.exists
+
+- name: obsidian | install from .deb
+  become: true
+  ansible.builtin.apt:
+    deb: "{{ obsidian_deb_path }}"
+    state: present
+  when: not obsidian_installed.stat.exists
+
+- name: obsidian | clean up downloaded .deb
+  ansible.builtin.file:
+    path: "{{ obsidian_deb_path }}"
+    state: absent
+  when: not obsidian_installed.stat.exists

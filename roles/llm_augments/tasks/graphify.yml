@@ -23,16 +23,21 @@
     cmd: pipx install graphifyy
     creates: "{{ workstation_home }}/.local/bin/graphify"
 
-- name: graphify | check whether the skill is registered
-  ansible.builtin.stat:
-    path: "{{ workstation_home }}/.claude/skills/graphify"
-  register: graphify_skill
+# `graphify install` writes the /graphify skill into the Claude Code config.
+# The CLAUDE.md in this repo imports graphify.md via @graphify.md (a namespaced
+# file that gets overwritten, not appended). Guard on that import line already
+# being present to prevent duplicate installs on a second machine.
+- name: graphify | check if CLAUDE.md already has @graphify.md import
+  ansible.builtin.shell:
+    cmd: grep -qF '@graphify.md' "{{ workstation_home }}/.claude/CLAUDE.md"
+  register: graphify_import_check
+  failed_when: false
+  changed_when: false
   when: graphify_register_skill
 
-# `graphify install` writes the /graphify skill into the Claude Code config.
-# Note this lands in ~/.claude/skills, which roles/claude symlinks into this
-# repo — so the skill is captured in git like any other.
 - name: graphify | register the /graphify skill
-  when: graphify_register_skill and not graphify_skill.stat.exists
+  when: graphify_register_skill and graphify_import_check.rc != 0
   ansible.builtin.command:
     cmd: "{{ workstation_home }}/.local/bin/graphify install"
+  register: graphify_install_result
+  changed_when: "'already installed' not in graphify_install_result.stdout"

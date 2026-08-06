@@ -3,6 +3,7 @@
 claude_linked_paths:
   - settings.json
   - CLAUDE.md
+  - graphify.md
   - skills
   - agents
   - commands

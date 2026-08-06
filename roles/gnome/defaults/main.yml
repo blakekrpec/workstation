@@ -15,9 +15,19 @@ gnome_dconf_trees:
     file: settings-daemon.ini
   - path: /org/gnome/mutter/
     file: mutter.ini
+  - path: /org/gnome/shell/extensions/vitals/
+    file: vitals.ini
+  - path: /org/gnome/shell/extensions/multi-monitors-bar/
+    file: multi-monitors-bar.ini
 
 # Extensions available as apt packages. Anything from extensions.gnome.org
 # that is not packaged should be installed via the Extension Manager GUI once,
 # then captured in shell.ini (which carries enabled-extensions).
 gnome_extension_packages:
   - gnome-shell-extension-manager
+
+# Extensions to install from extensions.gnome.org. Each entry specifies the
+# UUID and version. The version must match an available shell-version on EGO.
+gnome_extensions_from_ego:
+  - uuid: Vitals@CoreCoding.com
+    version: 80

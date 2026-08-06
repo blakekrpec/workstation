@@ -1,25 +1,47 @@
-# Ghostty configuration.
-#
-# PLACEHOLDER — this is a minimal working config so the role has something to
-# link. Replace it wholesale with the setup from the work machine; nothing
-# here is precious.
-#
+# Ghostty configuration
+# Rose Pine theme with transparency
 # Reference: https://ghostty.org/docs/config/reference
 
+# Font Configuration
 # Matches the Nerd Font installed by roles/fonts. Without a Nerd Font the
 # Neovim statusline and file icons render as ◆? diamonds.
-font-family = 0xProto Nerd Font
-font-size = 12
+font-family = 0xProto Nerd Font Mono
+font-size = 10
+font-feature = -calt
 
-theme = dark
+# Window settings
+background-opacity = 0.9
+gtk-single-instance = false
 
-window-padding-x = 8
-window-padding-y = 8
-scrollback-limit = 100000
+# Rose Pine Theme Colors
+# Extracted from gnome-terminal rose-pine.dconf
 
-# Neovim uses the terminal's cursor shape; keep it a block in normal mode.
-cursor-style = block
-cursor-style-blink = false
+# Background and Foreground
+# background = 191724  # Commented out to allow transparency
+foreground = e0def4
 
-copy-on-select = clipboard
-confirm-close-surface = false
+# Cursor
+cursor-color = 524f67
+cursor-text = e0def4
+
+# Selection
+selection-background = 403d52
+selection-foreground = e0def4
+
+# Palette (16 colors - normal and bright)
+palette = 0=#26233a
+palette = 1=#eb6f92
+palette = 2=#31748f
+palette = 3=#f6c177
+palette = 4=#9ccfd8
+palette = 5=#c4a7e7
+palette = 6=#ebbcba
+palette = 7=#e0def4
+palette = 8=#6e6a86
+palette = 9=#eb6f92
+palette = 10=#31748f
+palette = 11=#f6c177
+palette = 12=#9ccfd8
+palette = 13=#c4a7e7
+palette = 14=#ebbcba
+palette = 15=#e0def4

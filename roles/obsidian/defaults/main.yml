@@ -1,0 +1,7 @@
+---
+# Obsidian version to install. Check https://github.com/obsidianmd/obsidian-releases/releases
+# for the latest. The playbook will download the .deb for this version.
+obsidian_version: "1.12.7"
+obsidian_arch: amd64
+obsidian_deb_url: "https://github.com/obsidianmd/obsidian-releases/releases/download/v{{ obsidian_version }}/obsidian_{{ obsidian_version }}_{{ obsidian_arch }}.deb"
+obsidian_deb_path: "/tmp/obsidian_{{ obsidian_version }}_{{ obsidian_arch }}.deb"

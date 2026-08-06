@@ -1,0 +1,32 @@
+---
+# Docker CE versions — pinned for stability. Floating versions can break things.
+# Check available versions: apt-cache madison docker-ce
+# Update deliberately: change the pins, converge, verify, commit.
+docker_version: "5:29.6.2-1~ubuntu.24.04~noble"
+docker_cli_version: "5:29.6.2-1~ubuntu.24.04~noble"
+containerd_version: "2.2.6-1~ubuntu.24.04~noble"
+
+docker_keyring_url: https://download.docker.com/linux/ubuntu/gpg
+docker_keyring_path: /etc/apt/keyrings/docker.gpg
+docker_repo_arch: amd64
+
+# Docker packages with pinned versions
+docker_packages:
+  - "docker-ce={{ docker_version }}"
+  - "docker-ce-cli={{ docker_cli_version }}"
+  - "containerd.io={{ containerd_version }}"
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# NVIDIA Container Toolkit integration
+nvidia_toolkit_enabled: true
+nvidia_toolkit_version: "1.19.1-1"
+nvidia_keyring_url: https://nvidia.github.io/libnvidia-container/gpgkey
+nvidia_keyring_path: /etc/apt/keyrings/nvidia-container-toolkit.gpg
+nvidia_repo_list_url: https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list
+
+# daemon.json settings
+# docker_daemon_dns: [] is left empty/commented as custom DNS is typically
+# work-network-specific. Uncomment in host_vars if needed on a specific machine.
+# docker_daemon_dns: ["8.8.8.8", "1.1.1.1"]
+docker_daemon_include_nvidia_runtime: "{{ nvidia_toolkit_enabled }}"

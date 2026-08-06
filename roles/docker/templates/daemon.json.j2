@@ -1,0 +1,19 @@
+{
+{% if docker_daemon_include_nvidia_runtime %}
+    "runtimes": {
+        "nvidia": {
+            "path": "nvidia-container-runtime",
+            "args": []
+        }
+    }{% if docker_daemon_dns is defined and docker_daemon_dns | length > 0 %},{% endif %}
+
+{% endif %}
+{% if docker_daemon_dns is defined and docker_daemon_dns | length > 0 %}
+    "dns": [
+{% for dns in docker_daemon_dns %}
+        "{{ dns }}"{% if not loop.last %},{% endif %}
+
+{% endfor %}
+    ]
+{% endif %}
+}

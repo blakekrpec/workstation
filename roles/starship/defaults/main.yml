@@ -1,0 +1,8 @@
+---
+# Starship is installed from GitHub releases at a pinned version, mirroring the
+# neovim role's "pin, bump deliberately" approach. The official curl | sh
+# installer is avoided per AGENTS.md posture.
+starship_version: v1.26.0
+starship_install_dir: /usr/local/bin
+starship_arch: x86_64-unknown-linux-gnu
+starship_tarball_url: "https://github.com/starship/starship/releases/download/{{ starship_version }}/starship-{{ starship_arch }}.tar.gz"

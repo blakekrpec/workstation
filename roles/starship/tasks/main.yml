@@ -1,0 +1,45 @@
+---
+# Installs the starship binary at a pinned version and symlinks the config.
+# The init is handled by dotfiles/bash/bashrc.d/40-starship.sh, which is picked
+# up by the shell role's loader automatically.
+
+- name: starship | read installed version
+  ansible.builtin.command: starship --version
+  register: starship_installed
+  changed_when: false
+  failed_when: false
+
+- name: starship | install {{ starship_version }}
+  # Reinstalls when the pin is bumped, not just when starship is missing.
+  when: starship_version not in (starship_installed.stdout | default(''))
+  block:
+    - name: starship | download {{ starship_version }} tarball
+      ansible.builtin.get_url:
+        url: "{{ starship_tarball_url }}"
+        dest: "/tmp/starship-{{ starship_version }}-{{ starship_arch }}.tar.gz"
+        mode: '0644'
+
+    - name: starship | extract to {{ starship_install_dir }}
+      become: true
+      ansible.builtin.unarchive:
+        src: "/tmp/starship-{{ starship_version }}-{{ starship_arch }}.tar.gz"
+        dest: "{{ starship_install_dir }}"
+        remote_src: true
+
+    - name: starship | clean up tarball
+      ansible.builtin.file:
+        path: "/tmp/starship-{{ starship_version }}-{{ starship_arch }}.tar.gz"
+        state: absent
+
+- name: starship | verify the pinned version is what runs
+  ansible.builtin.command: starship --version
+  register: starship_check
+  changed_when: false
+  failed_when: starship_version not in starship_check.stdout
+
+- name: starship | link ~/.config/starship.toml to the repo
+  ansible.builtin.include_role:
+    name: link
+  vars:
+    link_src: "{{ workstation_repo }}/dotfiles/starship/starship.toml"
+    link_dest: "{{ workstation_home }}/.config/starship.toml"

@@ -10,6 +10,8 @@
 # Flags:
 #   --profile <name>   which set of roles to converge (default: full)
 #   --only <role>      converge exactly one role, ignoring the profile
+#                      (may be repeated: --only ghostty --only nvim)
+#                      (or comma-separated: --only ghostty,neovim,gnome)
 #   --list             show available profiles and exit
 #   --check            dry run; show what would change
 #
@@ -26,7 +28,7 @@ die()  { printf '\033[0;31m[bootstrap]\033[0m %s\n' "$*" >&2; exit 1; }
 
 PASSTHRU=()
 PROFILE=""
-ONLY=""
+ONLY_TAGS=()
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -37,9 +39,14 @@ while [ $# -gt 0 ]; do
             PROFILE="${1#*=}"; shift ;;
         --only)
             [ $# -ge 2 ] || die "--only needs a role name"
-            ONLY="$2"; shift 2 ;;
+            # Allow comma-separated or repeated --only flags
+            IFS=',' read -ra TAGS <<< "$2"
+            ONLY_TAGS+=("${TAGS[@]}")
+            shift 2 ;;
         --only=*)
-            ONLY="${1#*=}"; shift ;;
+            IFS=',' read -ra TAGS <<< "${1#*=}"
+            ONLY_TAGS+=("${TAGS[@]}")
+            shift ;;
         --list)
             # Profiles are defined once, in group_vars — parsed, never duplicated.
             sed -n '/^profiles:/,/^$/p' group_vars/all.yml
@@ -49,11 +56,12 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-# --only pins the profile to `full` so the role is guaranteed to be in
-# active_roles, then narrows execution with a tag.
-if [ -n "$ONLY" ]; then
+# --only pins the profile to `full` so all roles are eligible in active_roles,
+# then narrows execution with a tag (or comma-joined tags for multiple roles).
+if [ ${#ONLY_TAGS[@]} -gt 0 ]; then
     [ -z "$PROFILE" ] || die "--only and --profile are mutually exclusive"
-    PASSTHRU+=(-e "profile=full" --tags "$ONLY")
+    TAGS_JOINED=$(IFS=,; echo "${ONLY_TAGS[*]}")
+    PASSTHRU+=(-e "profile=full" --tags "$TAGS_JOINED")
 elif [ -n "$PROFILE" ]; then
     PASSTHRU+=(-e "profile=$PROFILE")
 fi

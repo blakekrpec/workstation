@@ -70,12 +70,24 @@
     - role: neovim
       tags: [neovim]
       when: "'neovim' in active_roles"
+    - role: starship
+      tags: [starship]
+      when: "'starship' in active_roles"
     - role: claude
       tags: [claude]
       when: "'claude' in active_roles"
     - role: llm_augments
       tags: [llm_augments, augments]
       when: "'llm_augments' in active_roles"
+    - role: chrome
+      tags: [chrome]
+      when: "'chrome' in active_roles"
+    - role: obsidian
+      tags: [obsidian]
+      when: "'obsidian' in active_roles"
+    - role: docker
+      tags: [docker]
+      when: "'docker' in active_roles"
     - role: ghostty
       tags: [ghostty]
       when: "'ghostty' in active_roles"
