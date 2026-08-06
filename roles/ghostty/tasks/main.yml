@@ -6,6 +6,26 @@
     classic: "{{ ghostty_snap_classic }}"
     state: present
 
+# Ghostty is also packaged as a deb by the mkasberg PPA, and having both
+# installed splits the dock icon. The deb ships
+# /usr/share/applications/com.mitchellh.ghostty.desktop, which GNOME matches a
+# running window to ahead of the snap's ghostty_ghostty.desktop that
+# dotfiles/gnome/shell.ini pins — so windows group under a second icon below the
+# favourites instead of showing dots under the pinned one. Worse, the bare
+# `ghostty` command in the Ctrl+Alt+T binding resolves to /usr/bin/ghostty while
+# the favourite launches the snap, so the two never converge.
+#
+# This role owns ghostty, so make the snap the only copy. Runs after the snap
+# install, never before: removing the deb first would leave the machine with no
+# terminal if the snap install failed. A no-op on machines that never had the
+# PPA.
+- name: ghostty | remove the conflicting deb packaging
+  become: true
+  ansible.builtin.apt:
+    name: ghostty
+    state: absent
+    purge: true
+
 # The whole config directory is linked, so adding themes or a shader later is
 # a commit rather than a playbook change.
 - name: ghostty | link ~/.config/ghostty to the repo
