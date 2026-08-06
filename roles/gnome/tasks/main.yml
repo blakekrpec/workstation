@@ -9,6 +9,13 @@
     state: present
   when: gnome_extension_packages | length > 0
 
+- name: gnome | install desktop apps
+  become: true
+  ansible.builtin.apt:
+    name: "{{ gnome_apps }}"
+    state: present
+  when: gnome_apps | length > 0
+
 - name: gnome | ensure extensions directory exists
   ansible.builtin.file:
     path: "{{ workstation_home }}/.local/share/gnome-shell/extensions"
@@ -43,6 +50,19 @@
     - not item.stat.exists
   loop_control:
     label: "{{ item.item.uuid }}"
+  register: gnome_ego_install
+
+# A running GNOME Shell scans the extension directories once, at startup. An
+# extension dropped in afterwards is on disk and enabled in dconf but invisible
+# to the session — `gnome-extensions list` will not even show it. Nothing in the
+# playbook can fix that: reloading is disruptive, and on Wayland it is not
+# possible at all without ending the session.
+- name: gnome | queue the shell-restart notice
+  when: gnome_ego_install is changed
+  ansible.builtin.set_fact:
+    workstation_notices: "{{ workstation_notices | default([]) + [gnome_notice] }}"
+  vars:
+    gnome_notice: "gnome: installed extension(s) that the running shell has not scanned yet. On X11 press Alt+F2, type r, press Enter. On Wayland log out and back in. Until then they will not appear, even in Extension Manager."
 
 - name: gnome | clean up downloaded extension zips
   ansible.builtin.file:

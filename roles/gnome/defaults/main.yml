@@ -26,8 +26,23 @@ gnome_dconf_trees:
 gnome_extension_packages:
   - gnome-shell-extension-manager
 
+# Desktop apps that are not GNOME extensions and so cannot come from EGO.
+# Variety is a wallpaper rotator; it ships in the Ubuntu archive (noble/universe).
+gnome_apps:
+  - variety
+
 # Extensions to install from extensions.gnome.org. Each entry specifies the
 # UUID and version. The version must match an available shell-version on EGO.
+#
+# To find the right version for a UUID on this machine's shell:
+#   curl -sL "https://extensions.gnome.org/extension-info/?uuid=<UUID>&shell_version=$(gnome-shell --version | grep -oE '[0-9]+' | head -1)"
+# and read `shell_version_map`. A version that does not list the running shell
+# in its metadata.json is installed but silently never loaded.
 gnome_extensions_from_ego:
   - uuid: Vitals@CoreCoding.com
     version: 80
+  # "Multi Monitor Bar", a fork of spin83's Multi Monitors. shell.ini enables
+  # this UUID, so without it here the extension is enabled-but-absent and the
+  # shell just skips it.
+  - uuid: multi-monitors-bar@frederykabryan
+    version: 48

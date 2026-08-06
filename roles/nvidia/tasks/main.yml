@@ -1,0 +1,90 @@
+---
+# Check-only role. It never installs, pins, or changes a driver — it reads state
+# and queues a notice.
+#
+# Why no pinning: on 2026-08-05 unattended-upgrades moved
+# linux-image-generic-hwe-24.04 from 6.17.0-20 to 7.0.0-28 but left
+# linux-modules-nvidia-580-open-generic-hwe-24.04 behind at the 6.17 version —
+# the kernel bump came through -security (which unattended-upgrades applies) and
+# the module metapackage sits in -updates (which it does not). The next boot had
+# no nvidia module, so both displays collapsed to one generic framebuffer.
+#
+# Pinning a driver version would not have helped: 580 was never incompatible,
+# and linux-modules-nvidia-580-open-7.0.0-28-generic existed in apt the whole
+# time. The packages that matter embed the kernel version in their *name*, so
+# they change identity with every kernel and there is nothing stable to pin — and
+# a hard pin can block the upgrade that keeps the module in step with a new
+# kernel. Installing display drivers from here is also the wrong blast radius: a
+# bad pin costs the GUI and is repaired from a TTY. ubuntu-drivers / Additional
+# Drivers is the distro-tested path.
+
+- name: nvidia | look for an nvidia GPU
+  ansible.builtin.command: lspci -nn
+  register: nvidia_lspci
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: nvidia | check the driver matches every installed kernel
+  when: "'NVIDIA' in (nvidia_lspci.stdout | default(''))"
+  block:
+    # Filtering on status is required, not cosmetic: `dpkg-query --show` lists
+    # every package dpkg knows of, installed or not. Here that means
+    # nvidia-driver-595 (not-installed) sorts ahead of the real
+    # nvidia-driver-595-open, which yielded the branch "595" and so a package
+    # name that does not exist. It also made the no-driver-at-all check below
+    # unreachable, since the unfiltered output is never empty.
+    - name: nvidia | read the installed driver package
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -uo pipefail
+          dpkg-query --showformat='${Package} ${db:Status-Status}\n' \
+                     --show 'nvidia-driver-*' 2>/dev/null |
+            awk '$2 == "installed" { print $1 }'
+      register: nvidia_driver_pkg
+      changed_when: false
+      # Non-zero simply means no driver package matched, which is a normal state
+      # on a machine running nouveau or a fresh install.
+      failed_when: false
+      check_mode: false
+
+    - name: nvidia | find kernels with no nvidia module
+      ansible.builtin.shell:
+        executable: /bin/bash
+        cmd: |
+          set -uo pipefail
+          # /lib/modules also holds entries that are not kernels (a stray
+          # "kernel" directory), so enumerate on modules.dep — only a real
+          # installed kernel has one. modinfo -k resolves against that kernel
+          # rather than the running one, which is the whole point: it catches a
+          # staged kernel *before* the reboot that would strand the GPU.
+          for path in /lib/modules/*/; do
+            k="$(basename "$path")"
+            [ -f "/lib/modules/$k/modules.dep" ] || continue
+            modinfo -k "$k" nvidia >/dev/null 2>&1 || echo "$k"
+          done
+      register: nvidia_missing
+      changed_when: false
+      check_mode: false
+
+    - name: nvidia | queue the missing-module notice
+      when:
+        - nvidia_driver_pkg.stdout | default('') | trim | length > 0
+        - nvidia_missing.stdout | trim | length > 0
+      ansible.builtin.set_fact:
+        workstation_notices: "{{ workstation_notices | default([]) + [nvidia_notice] }}"
+      vars:
+        # nvidia-driver-595-open -> 595-open, which is also the module
+        # metapackage's branch component.
+        nvidia_branch: "{{ nvidia_driver_pkg.stdout_lines | first | regex_replace('^nvidia-driver-', '') }}"
+        nvidia_notice: "nvidia: kernel(s) {{ nvidia_missing.stdout_lines | join(', ') }} have no nvidia module — booting one falls back to basic graphics (a single monitor). Fix: sudo apt install linux-modules-nvidia-{{ nvidia_branch }}-generic-hwe-24.04 — or purge the kernel if it is a leftover."
+
+    # An nvidia GPU with no driver package at all is a different situation from a
+    # driver that has lost step with a kernel, and wants a different remedy.
+    - name: nvidia | queue the no-driver notice
+      when: nvidia_driver_pkg.stdout | default('') | trim | length == 0
+      ansible.builtin.set_fact:
+        workstation_notices: "{{ workstation_notices | default([]) + [nvidia_no_driver] }}"
+      vars:
+        nvidia_no_driver: "nvidia: an nvidia GPU is present but no nvidia-driver-* package is installed, so the GPU is running on nouveau or no driver at all. Run `ubuntu-drivers list` and install a tested driver via Additional Drivers."

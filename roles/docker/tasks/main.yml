@@ -54,6 +54,25 @@
     groups: docker
     append: true
 
+# Group membership is fixed at login, so the shell that launched bootstrap.sh
+# still carries the old set — and Ansible, started from that shell, inherits it.
+# That makes `id -nG` here an accurate read of whether the user's *current*
+# session can reach the docker socket, which is a better test than "did the
+# group task change": the group is usually already correct on disk from an
+# earlier run while the session is still stale.
+- name: docker | read this session's groups
+  ansible.builtin.command: id -nG
+  register: docker_session_groups
+  changed_when: false
+  check_mode: false
+
+- name: docker | queue the re-login notice
+  when: "'docker' not in docker_session_groups.stdout.split()"
+  ansible.builtin.set_fact:
+    workstation_notices: "{{ workstation_notices | default([]) + [docker_notice] }}"
+  vars:
+    docker_notice: "docker: {{ ansible_facts.user_id }} is in the docker group on disk, but this login session predates it. Log out and back in (or run `newgrp docker` in a shell) before `docker ps` will work."
+
 - name: docker | nvidia container toolkit tasks
   ansible.builtin.include_tasks: nvidia_toolkit.yml
   when: nvidia_toolkit_enabled | bool

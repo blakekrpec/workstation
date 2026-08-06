@@ -94,3 +94,17 @@
     - role: gnome
       tags: [gnome]
       when: "'gnome' in active_roles"
+    - role: nvidia
+      tags: [nvidia]
+      when: "'nvidia' in active_roles"
+
+  # Roles queue follow-up actions into workstation_notices rather than printing
+  # them where they happen — a debug task fired mid-run scrolls past under a few
+  # hundred lines of task output and gets missed. Everything lands here instead,
+  # once, as the last thing on screen.
+  post_tasks:
+    - name: Show actions you still need to take
+      when: workstation_notices | default([]) | length > 0
+      ansible.builtin.debug:
+        msg: "{{ ['ACTION REQUIRED', ''] + workstation_notices }}"
+      tags: always
