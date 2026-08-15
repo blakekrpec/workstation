@@ -109,6 +109,9 @@ under `$HOME`) instead of deleting it.
 | [graphify](https://github.com/Graphify-Labs/graphify) | Turns a repo into a queryable knowledge graph; `/graphify` skill | `pipx install graphifyy` |
 | [caveman](https://github.com/JuliusBrussee/caveman) | Compresses *output* by answering tersely; code and paths byte-preserved | Claude Code plugin |
 
+Longer write-ups (what's global vs. per-repo opt-in, how Claude knows to use
+each one, gotchas) live in [`docs/llm-augments/`](docs/llm-augments/).
+
 Each is individually switchable — see `roles/llm_augments/defaults/main.yml`:
 
 ```yaml
