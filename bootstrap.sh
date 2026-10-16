@@ -10,8 +10,8 @@
 # Flags:
 #   --profile <name>   which set of roles to converge (default: full)
 #   --only <role>      converge exactly one role, ignoring the profile
-#                      (may be repeated: --only ghostty --only nvim)
-#                      (or comma-separated: --only ghostty,neovim,gnome)
+#                      (may be repeated: --only gnome --only nvim)
+#                      (or comma-separated: --only gnome,neovim,starship)
 #   --list             show available profiles and exit
 #   --check            dry run; show what would change
 #

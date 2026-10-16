@@ -1,7 +1,7 @@
 # workstation
 
 Ansible-managed Ubuntu workstation. One playbook, one repo: Neovim, Node,
-Claude Code and its augments, fonts, shell, Starship, Ghostty, GNOME, Docker,
+Claude Code and its augments, fonts, shell, Starship, GNOME, Docker,
 Chrome, Obsidian — everything needed for a reproducible dev environment.
 
 Ubuntu is first class. Windows is a deliberate bolt-on: it gets Neovim and
@@ -39,8 +39,8 @@ fragments load.
 ./bootstrap.sh                       # everything (profile: full, default)
 ./bootstrap.sh --profile dev         # work layer (visual/editor setup)
 ./bootstrap.sh --only claude         # exactly one role, ignoring the profile
-./bootstrap.sh --only ghostty,neovim,gnome  # multiple roles (comma-separated)
-./bootstrap.sh --only ghostty --only neovim # or repeated --only flags
+./bootstrap.sh --only gnome,neovim,starship # multiple roles (comma-separated)
+./bootstrap.sh --only gnome --only neovim   # or repeated --only flags
 ./bootstrap.sh --list                # show the profiles
 ./bootstrap.sh --check --diff        # dry run
 ```
@@ -57,7 +57,7 @@ This repo uses a **two-profile model** designed for the work/personal machine sp
 
 | Profile | Use Case | Roles |
 |---|---|---|
-| `dev` | **Work machine** — layer your visual/editor/desktop setup on top of work's own ansible (which provides opencode, docker, internal tools). | base, shell, git, fonts, node, neovim, starship, chrome, obsidian, ghostty, gnome, nvidia |
+| `dev` | **Work machine** — layer your visual/editor/desktop setup on top of work's own ansible (which provides opencode, docker, internal tools). | base, shell, git, fonts, node, neovim, starship, chrome, obsidian, gnome, nvidia |
 | `full` *(default)* | **Personal machine** — everything. `dev` plus the tools work provides its own way. | `dev` + claude, llm_augments, docker |
 
 Profiles are defined in `group_vars/all.yml`. `--tags` selects *within* the active profile; `--only` ignores the profile entirely and runs the role(s) you name (comma-separated or repeated flags).
@@ -65,7 +65,7 @@ Profiles are defined in `group_vars/all.yml`. `--tags` selects *within* the acti
 **At work:**
 ```bash
 ./bootstrap.sh --profile dev                # full visual/editor layer
-./bootstrap.sh --only ghostty,gnome         # just desktop bits
+./bootstrap.sh --only gnome                 # just desktop bits
 ```
 
 **On your personal machine:**
@@ -93,8 +93,7 @@ See `AGENTS.md` for the "which profile?" decision tree when adding new roles.
 | `chrome` | Google Chrome stable via official deb822 apt source |
 | `obsidian` | Obsidian from GitHub releases (.deb), pinned version |
 | `docker` | Docker CE + nvidia-container-toolkit with runtime configured |
-| `ghostty` | Ghostty terminal via snap (classic), Rose Pine theme with transparency |
-| `gnome` | GNOME extensions (Vitals from extensions.gnome.org), dconf settings, keybinds, favorite apps |
+| `gnome` | GNOME extensions (Vitals from extensions.gnome.org), dconf settings, keybinds (`Ctrl+Alt+T` → gnome-terminal), favorite apps |
 
 `roles/link` is a helper, not a top-level role — it symlinks a path and moves
 anything real it displaces to `~/.workstation-backup/` (mirroring its location
@@ -191,7 +190,7 @@ group_vars/all.yml        profiles, pinned versions, paths
 host_vars/<hostname>.yml  per-machine overrides, loaded by real hostname
 dotfiles/                 symlink sources, mirroring $HOME
 roles/                    base shell git fonts node neovim claude llm_augments
-                          chrome obsidian docker ghostty gnome (+ link helper)
+                          chrome obsidian docker gnome (+ link helper)
 ```
 
 ## Related repos

@@ -1,4 +1,0 @@
----
-# Ghostty is installed via snap (classic confinement for full system access).
-# The snap is the officially supported route and receives rapid updates.
-ghostty_snap_classic: true

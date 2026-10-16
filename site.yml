@@ -88,9 +88,6 @@
     - role: docker
       tags: [docker]
       when: "'docker' in active_roles"
-    - role: ghostty
-      tags: [ghostty]
-      when: "'ghostty' in active_roles"
     - role: gnome
       tags: [gnome]
       when: "'gnome' in active_roles"

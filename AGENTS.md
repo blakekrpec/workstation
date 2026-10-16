@@ -23,14 +23,14 @@ If something is installed by your work's own automation, **don't duplicate it he
 This repo uses a **two-profile model** designed for the work/personal split:
 
 ### `dev` — Work Layer
-**Roles:** base, shell, git, fonts, node, neovim, starship, chrome, obsidian, ghostty, gnome, nvidia
+**Roles:** base, shell, git, fonts, node, neovim, starship, chrome, obsidian, gnome, nvidia
 
 **When to use:** On a work machine where corporate ansible already provides docker, opencode, and infrastructure. Run `./bootstrap.sh --profile dev` to layer your visual/editor/desktop setup on top.
 
 **What's included:**
 - Editor stack (neovim + config)
 - Shell + prompt (bash fragments, starship)
-- Desktop environment (ghostty terminal, gnome settings/keybinds, extensions)
+- Desktop environment (gnome-terminal, gnome settings/keybinds, extensions)
 - Browsers & productivity (chrome, obsidian)
 - Dev fundamentals (git, fonts, node/nvm)
 
@@ -76,7 +76,7 @@ When adding a new tool/app via agent-driven capture or manual extension:
 
 This enables:
 ```bash
-./bootstrap.sh --only ghostty,gnome    # Just grab desktop bits at work
+./bootstrap.sh --only gnome,starship   # Just grab desktop bits at work
 ./bootstrap.sh --only neovim           # Pull one piece onto a server
 ```
 
@@ -121,7 +121,7 @@ Number your fragment (`10-`, `20-`, `30-`, `40-`) to control load order. PATH/en
 - Anything that has an upstream package manager or install mechanism
 
 **Do commit:**
-- Your config files (`starship.toml`, `ghostty/config`, dconf dumps)
+- Your config files (`starship.toml`, dconf dumps)
 - Dotfiles that you modify (`.gitconfig`, claude `CLAUDE.md`)
 - Pin versions in role defaults (`neovim_version`, `starship_version`, `obsidian_version`)
 
@@ -192,8 +192,8 @@ Quick reference for adding new stuff:
 |---|---|---|
 | Apt package | `roles/base/tasks/main.yml` | `ripgrep`, `jq`, `fd-find` |
 | Shell export / PATH | `dotfiles/bash/bashrc.d/NN-<name>.sh` | `30-opencode.sh` |
-| Tool with own install | New role in `roles/<name>/` + tag in `site.yml` + profile | `starship`, `ghostty`, `docker` |
-| Config file | `dotfiles/<name>/` symlinked by the role | `starship/starship.toml`, `ghostty/config` |
+| Tool with own install | New role in `roles/<name>/` + tag in `site.yml` + profile | `starship`, `docker` |
+| Config file | `dotfiles/<name>/` symlinked by the role | `starship/starship.toml` |
 | Claude skill/agent | `dotfiles/claude/skills/<name>/` or `dotfiles/claude/agents/<name>/` | Custom skills, local agents |
 | GNOME extension | `gnome_extensions_from_ego` list in `roles/gnome/defaults/main.yml` | Vitals, installed via EGO API |
 | GNOME settings | Dconf dump to `dotfiles/gnome/<tree>.ini`, add path to `gnome_dconf_trees` | `vitals.ini`, `shell.ini` |
