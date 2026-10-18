@@ -1,0 +1,6 @@
+---
+# Epic has no native Linux launcher. Epic Asset Manager (community) browses and
+# downloads Unreal Engine versions and marketplace assets, which is what we need.
+unreal_flatpak_remote: flathub
+unreal_flatpak_remote_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+unreal_flatpak_app: io.github.achetagames.epic_asset_manager

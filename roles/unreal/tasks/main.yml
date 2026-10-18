@@ -1,0 +1,34 @@
+---
+# Epic Asset Manager is only distributed as a Flatpak, so this role carries its
+# own flatpak install rather than putting it in `base` (the dev profile has no
+# use for it).
+- name: unreal | install flatpak
+  become: true
+  ansible.builtin.apt:
+    name: flatpak
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: unreal | add flathub remote
+  become: true
+  community.general.flatpak_remote:
+    name: "{{ unreal_flatpak_remote }}"
+    flatpakrepo_url: "{{ unreal_flatpak_remote_url }}"
+    state: present
+
+- name: unreal | install Epic Asset Manager
+  become: true
+  community.general.flatpak:
+    name: "{{ unreal_flatpak_app }}"
+    remote: "{{ unreal_flatpak_remote }}"
+    state: present
+  register: unreal_eam
+
+# Flatpak exports its .desktop files under /var/lib/flatpak/exports, which GNOME
+# only adds to XDG_DATA_DIRS at login. The first install needs a re-login before
+# the dock favorite resolves.
+- name: unreal | queue re-login notice
+  ansible.builtin.set_fact:
+    workstation_notices: "{{ workstation_notices | default([]) + ['unreal: Epic Asset Manager installed; log out and back in once so GNOME sees the Flatpak desktop entry (dock favorite).'] }}"
+  when: unreal_eam is changed

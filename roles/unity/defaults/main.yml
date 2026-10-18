@@ -1,0 +1,4 @@
+---
+unity_keyring_url: https://hub.unity3d.com/linux/keys/public
+unity_keyring_path: /etc/apt/keyrings/unityhub.gpg
+unity_repo_arch: amd64

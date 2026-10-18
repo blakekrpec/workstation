@@ -17,6 +17,10 @@ __pycache__/
 # in this repo for no benefit.
 dotfiles/claude/skills/graphify/
 
+# Skills synced from claude.ai at runtime by Claude Code (lands here via the
+# ~/.claude/skills symlink). Regenerated per machine; large and not config.
+dotfiles/claude/skills/synced/
+
 # --- Belt and braces -------------------------------------------------------
 # roles/claude only ever symlinks the paths in its defaults, but if anything
 # under dotfiles/claude/ is ever pointed at real ~/.claude state, these keep

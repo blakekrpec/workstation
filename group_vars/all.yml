@@ -24,12 +24,12 @@ profiles:
   # individually --only-able for selective runs.
   dev: [base, shell, git, fonts, node, neovim, tmux, starship, chrome, obsidian, gnome, nvidia]
   # Personal machine — dev plus the tools work provides its own way.
-  full: [base, shell, git, fonts, node, neovim, tmux, starship, chrome, obsidian, gnome, nvidia, claude, llm_augments, docker]
+  full: [base, shell, git, fonts, node, neovim, tmux, starship, chrome, obsidian, gnome, nvidia, claude, llm_augments, docker, unity, unreal]
 
 active_roles: "{{ profiles[profile] }}"
 
 # --- feature flags (override per machine in host_vars/) ---------------------
-unity_dev: false   # true pulls in .NET SDK + vstuc for nvim-dap Unity debugging
+unity_dev: false   # true pulls in .NET SDK + vstuc for nvim-dap Unity debugging, and installs Unity Hub even outside the full profile
 
 # --- neovim ----------------------------------------------------------------
 # The nvim config is its own repo; this role only clones and updates it.

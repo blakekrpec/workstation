@@ -58,7 +58,7 @@ This repo uses a **two-profile model** designed for the work/personal machine sp
 | Profile | Use Case | Roles |
 |---|---|---|
 | `dev` | **Work machine** — layer your visual/editor/desktop setup on top of work's own ansible (which provides opencode, docker, internal tools). | base, shell, git, fonts, node, neovim, tmux, starship, chrome, obsidian, gnome, nvidia |
-| `full` *(default)* | **Personal machine** — everything. `dev` plus the tools work provides its own way. | `dev` + claude, llm_augments, docker |
+| `full` *(default)* | **Personal machine** — everything. `dev` plus the tools work provides its own way. | `dev` + claude, llm_augments, docker, unity, unreal |
 
 Profiles are defined in `group_vars/all.yml`. `--tags` selects *within* the active profile; `--only` ignores the profile entirely and runs the role(s) you name (comma-separated or repeated flags).
 
@@ -93,6 +93,8 @@ See `AGENTS.md` for the "which profile?" decision tree when adding new roles.
 | `llm_augments` | rtk, beads, graphify, caveman |
 | `chrome` | Google Chrome stable via official deb822 apt source |
 | `obsidian` | Obsidian from GitHub releases (.deb), pinned version |
+| `unity` | Unity Hub via official deb822 apt source (also installed when `unity_dev: true`) |
+| `unreal` | Epic Asset Manager (community Epic client for UE versions + assets) via Flatpak/Flathub; installs flatpak |
 | `docker` | Docker CE + nvidia-container-toolkit with runtime configured |
 | `gnome` | GNOME extensions (Vitals from extensions.gnome.org), dconf settings, keybinds (`Ctrl+Alt+T` → gnome-terminal), favorite apps |
 

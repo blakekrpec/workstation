@@ -88,6 +88,12 @@
     - role: obsidian
       tags: [obsidian]
       when: "'obsidian' in active_roles"
+    - role: unity
+      tags: [unity]
+      when: "'unity' in active_roles or unity_dev | bool"
+    - role: unreal
+      tags: [unreal]
+      when: "'unreal' in active_roles"
     - role: docker
       tags: [docker]
       when: "'docker' in active_roles"

@@ -1,0 +1,54 @@
+---
+- name: unity | ensure keyrings directory exists
+  become: true
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+# Same temp-file-then-install pattern as the chrome role: a failed fetch must
+# not leave a truncated keyring that `creates:` would then skip forever.
+# executable: /bin/bash because dash has no `pipefail`.
+- name: unity | download and install Unity signing key
+  become: true
+  ansible.builtin.shell:
+    executable: /bin/bash
+    cmd: |
+      set -euo pipefail
+      tmp="$(mktemp)"
+      trap 'rm -f "$tmp"' EXIT
+      curl -fsSL "{{ unity_keyring_url }}" | gpg --batch --yes --dearmor -o "$tmp"
+      install -m 0644 "$tmp" "{{ unity_keyring_path }}"
+    creates: "{{ unity_keyring_path }}"
+
+- name: unity | add Unity Hub deb822 apt source
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/unityhub.sources
+    content: |
+      Types: deb
+      URIs: https://hub.unity3d.com/linux/repos/deb
+      Suites: stable
+      Components: main
+      Architectures: {{ unity_repo_arch }}
+      Signed-By: {{ unity_keyring_path }}
+    mode: '0644'
+  register: unity_repo
+
+- name: unity | update apt cache if repo changed
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: unity_repo is changed
+
+- name: unity | check if unityhub is installed
+  ansible.builtin.stat:
+    path: /var/lib/dpkg/info/unityhub.list
+  register: unity_installed
+
+- name: unity | install unityhub
+  become: true
+  ansible.builtin.apt:
+    name: unityhub
+    state: present
+  when: not unity_installed.stat.exists
