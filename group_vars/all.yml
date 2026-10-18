@@ -22,9 +22,9 @@ profiles:
   # Work layer — the visual/editor/dev setup you carry on top of work's own
   # ansible (which provides opencode, docker, etc.). Everything here is also
   # individually --only-able for selective runs.
-  dev: [base, shell, git, fonts, node, neovim, starship, chrome, obsidian, gnome, nvidia]
+  dev: [base, shell, git, fonts, node, neovim, tmux, starship, chrome, obsidian, gnome, nvidia]
   # Personal machine — dev plus the tools work provides its own way.
-  full: [base, shell, git, fonts, node, neovim, starship, chrome, obsidian, gnome, nvidia, claude, llm_augments, docker]
+  full: [base, shell, git, fonts, node, neovim, tmux, starship, chrome, obsidian, gnome, nvidia, claude, llm_augments, docker]
 
 active_roles: "{{ profiles[profile] }}"
 
@@ -41,6 +41,24 @@ neovim_install_dir: /opt/nvim-linux-x86_64
 # apart get different editors. Bump deliberately: set the tag, converge, and
 # commit. Plugin versions are pinned separately by neovim-config/lazy-lock.json.
 neovim_version: v0.12.4
+
+# --- tmux ------------------------------------------------------------------
+# The tmux config is its own repo, cloned to where tmux >= 3.1 reads it
+# natively. The tmux binary itself is apt (roles/base).
+tmux_config_repo: https://github.com/blakekrpec/tmux-config.git
+tmux_config_version: main
+tmux_config_dir: "{{ workstation_home }}/.config/tmux"
+
+# Plugins pinned by commit and loaded directly by tmux.conf — no TPM, nothing
+# fetched when tmux starts. Bump: set the commit, converge, commit. Adding one
+# also needs a run-shell line at the bottom of tmux-config/tmux.conf.
+tmux_plugins:
+  - name: tmux-resurrect
+    repo: https://github.com/tmux-plugins/tmux-resurrect.git
+    version: e87d7d592cac97fa38c12395ebec042c154a1844   # v4.0.0
+  - name: tmux-continuum
+    repo: https://github.com/tmux-plugins/tmux-continuum.git
+    version: 46e0e0023476018ddb4cc0d44783eede27e5a8ec   # v3.1.0
 
 # --- node ------------------------------------------------------------------
 nvm_version: v0.40.1

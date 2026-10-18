@@ -70,6 +70,9 @@
     - role: neovim
       tags: [neovim]
       when: "'neovim' in active_roles"
+    - role: tmux
+      tags: [tmux]
+      when: "'tmux' in active_roles"
     - role: starship
       tags: [starship]
       when: "'starship' in active_roles"

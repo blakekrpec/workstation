@@ -1,0 +1,100 @@
+---
+# Clones the tmux config repo and its plugins. It knows nothing about the
+# config's contents — that lives in github.com/blakekrpec/tmux-config.
+# The tmux and fzf binaries come from roles/base (apt), so this role never
+# needs sudo.
+#
+# Two things are pinned, separately:
+#   tmux_config_version (group_vars) -> the config repo
+#   tmux_plugins        (group_vars) -> each plugin, by commit (no TPM)
+
+# The git module resets a tracked branch to the remote tip and silently drops
+# modified tracked files and un-pushed commits. Same guard as roles/neovim.
+- name: tmux | stat existing config checkout
+  ansible.builtin.stat:
+    path: "{{ tmux_config_dir }}/.git"
+  register: tmux_config_git
+
+- name: tmux | guard against clobbering local work
+  when: tmux_config_git.stat.exists
+  block:
+    - name: tmux | fetch without touching the worktree
+      ansible.builtin.command:
+        cmd: git fetch --quiet origin
+        chdir: "{{ tmux_config_dir }}"
+      changed_when: false
+
+    - name: tmux | look for changes a reset would destroy
+      ansible.builtin.shell:
+        chdir: "{{ tmux_config_dir }}"
+        cmd: |
+          # Tracked-but-modified files. Untracked files (and the gitignored
+          # plugins/ dir) survive a reset, so they are not counted here.
+          git status --porcelain --untracked-files=no
+          # Commits that exist locally and nowhere else.
+          git log --oneline origin/{{ tmux_config_version }}..HEAD
+      register: tmux_config_local
+      changed_when: false
+
+    - name: tmux | refuse to run if there is unpushed work
+      ansible.builtin.assert:
+        that: tmux_config_local.stdout | trim | length == 0
+        fail_msg: |
+          {{ tmux_config_dir }} has local work that the git update would destroy:
+
+          {{ tmux_config_local.stdout }}
+          Push or stash it, then re-run. To skip tmux for now, run
+          --only with the roles you want instead of the whole profile.
+
+- name: tmux | clone config repo to {{ tmux_config_dir }}
+  ansible.builtin.git:
+    repo: "{{ tmux_config_repo }}"
+    dest: "{{ tmux_config_dir }}"
+    version: "{{ tmux_config_version }}"
+    update: true
+
+# Plugins live in the checkout's gitignored plugins/ dir, which is where
+# tmux.conf loads them from. Pinned by commit, so a re-run is a no-op until
+# the pin is bumped.
+- name: tmux | clone plugin {{ item.name }}
+  ansible.builtin.git:
+    repo: "{{ item.repo }}"
+    dest: "{{ tmux_config_dir }}/plugins/{{ item.name }}"
+    version: "{{ item.version }}"
+    update: true
+  loop: "{{ tmux_plugins }}"
+  loop_control:
+    label: "{{ item.name }}@{{ item.version[:7] }}"
+
+- name: tmux | link scripts into ~/.local/bin
+  ansible.builtin.include_role:
+    name: link
+  vars:
+    link_src: "{{ tmux_config_dir }}/bin/{{ tmux_script }}"
+    link_dest: "{{ workstation_home }}/.local/bin/{{ tmux_script }}"
+  loop: "{{ tmux_bin_scripts }}"
+  loop_control:
+    loop_var: tmux_script
+
+# Per-machine search paths — seeded once, never overwritten (the
+# .gitconfig.local pattern). The stat keeps --check quiet on a fresh machine,
+# where the clone above hasn't actually happened yet.
+- name: tmux | stat sessionizer config template
+  ansible.builtin.stat:
+    path: "{{ tmux_config_dir }}/tmux-sessionizer.conf.example"
+  register: tmux_sessionizer_example
+
+- name: tmux | ensure sessionizer config dir exists
+  ansible.builtin.file:
+    path: "{{ workstation_home }}/.config/tmux-sessionizer"
+    state: directory
+    mode: "0755"
+
+- name: tmux | seed per-machine sessionizer config
+  when: tmux_sessionizer_example.stat.exists
+  ansible.builtin.copy:
+    src: "{{ tmux_config_dir }}/tmux-sessionizer.conf.example"
+    dest: "{{ workstation_home }}/.config/tmux-sessionizer/tmux-sessionizer.conf"
+    remote_src: true
+    force: false
+    mode: "0644"

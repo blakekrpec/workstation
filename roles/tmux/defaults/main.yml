@@ -1,0 +1,10 @@
+---
+# Scripts from tmux-config/bin linked into ~/.local/bin. Listed explicitly
+# rather than discovered with find, so --check works before the first clone.
+# Add a name here when a new script lands in tmux-config.
+tmux_bin_scripts:
+  - tmux-sessionizer
+  - tmux-quit-session
+  - tmux-sessionizer-cleanup
+  - tmux-missing-dir-cleanup
+  - tmux-nvim-cleanup

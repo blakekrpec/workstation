@@ -1,6 +1,6 @@
 # workstation
 
-Ansible-managed Ubuntu workstation. One playbook, one repo: Neovim, Node,
+Ansible-managed Ubuntu workstation. One playbook, one repo: Neovim, tmux, Node,
 Claude Code and its augments, fonts, shell, Starship, GNOME, Docker,
 Chrome, Obsidian — everything needed for a reproducible dev environment.
 
@@ -57,7 +57,7 @@ This repo uses a **two-profile model** designed for the work/personal machine sp
 
 | Profile | Use Case | Roles |
 |---|---|---|
-| `dev` | **Work machine** — layer your visual/editor/desktop setup on top of work's own ansible (which provides opencode, docker, internal tools). | base, shell, git, fonts, node, neovim, starship, chrome, obsidian, gnome, nvidia |
+| `dev` | **Work machine** — layer your visual/editor/desktop setup on top of work's own ansible (which provides opencode, docker, internal tools). | base, shell, git, fonts, node, neovim, tmux, starship, chrome, obsidian, gnome, nvidia |
 | `full` *(default)* | **Personal machine** — everything. `dev` plus the tools work provides its own way. | `dev` + claude, llm_augments, docker |
 
 Profiles are defined in `group_vars/all.yml`. `--tags` selects *within* the active profile; `--only` ignores the profile entirely and runs the role(s) you name (comma-separated or repeated flags).
@@ -81,12 +81,13 @@ See `AGENTS.md` for the "which profile?" decision tree when adding new roles.
 
 | Role | What it does |
 |---|---|
-| `base` | apt packages: build tools, ripgrep, fd, jq, clipboard, python3-venv |
+| `base` | apt packages: build tools, ripgrep, fd, jq, clipboard, python3-venv, tmux, fzf |
 | `shell` | `~/.bashrc.d/` fragments + the one managed loader block in `~/.bashrc` |
 | `git` | `~/.gitconfig` + untracked `~/.gitconfig.local` for machine-specific overrides |
 | `fonts` | 0xProto Nerd Font, per-user, no sudo |
 | `node` | nvm + Node LTS (Claude Code needs v22+ and must be nvm-managed to self-update) |
 | `neovim` | pinned Neovim release + clones `neovim-config` to `~/.config/nvim` |
+| `tmux` | clones `tmux-config` to `~/.config/tmux`, plugins at pinned commits, links its scripts into `~/.local/bin`, seeds `~/.config/tmux-sessionizer/tmux-sessionizer.conf` once |
 | `starship` | Starship cross-shell prompt, pinned release, Rose Pine theme |
 | `claude` | Claude Code CLI + symlinks `CLAUDE.md`, `graphify.md`, `skills/`, `agents/`, `commands/`; merges managed keys into `settings.json` |
 | `llm_augments` | rtk, beads, graphify, caveman |
@@ -145,6 +146,10 @@ setup, and both are bumped deliberately:
   all 35 plugins by commit. The `neovim` role runs `:Lazy! restore` after the
   clone changes. Bump with `:Lazy update` inside nvim, then commit the lockfile.
 
+- **tmux plugins** — `tmux_plugins` in `group_vars/all.yml`, by commit. No TPM:
+  `tmux.conf` loads them straight from `~/.config/tmux/plugins/`, so nothing is
+  fetched when tmux starts. The tmux binary itself is apt (`base`).
+
 `nvm` is pinned too; Node deliberately floats at LTS.
 
 ---
@@ -189,7 +194,7 @@ bootstrap.sh              the only shell script here
 group_vars/all.yml        profiles, pinned versions, paths
 host_vars/<hostname>.yml  per-machine overrides, loaded by real hostname
 dotfiles/                 symlink sources, mirroring $HOME
-roles/                    base shell git fonts node neovim claude llm_augments
+roles/                    base shell git fonts node neovim tmux claude llm_augments
                           chrome obsidian docker gnome (+ link helper)
 ```
 
@@ -198,3 +203,6 @@ roles/                    base shell git fonts node neovim claude llm_augments
 - [`neovim-config`](https://github.com/blakekrpec/neovim-config) — the Neovim
   config, cloned to `~/.config/nvim` by `roles/neovim`. Owns the Windows
   installer. Machine setup does not belong there.
+- [`tmux-config`](https://github.com/blakekrpec/tmux-config) — the tmux config
+  and sessionizer scripts, cloned to `~/.config/tmux` by `roles/tmux`. Same
+  split: config there, machine setup here.

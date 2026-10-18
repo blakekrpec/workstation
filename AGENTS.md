@@ -23,12 +23,12 @@ If something is installed by your work's own automation, **don't duplicate it he
 This repo uses a **two-profile model** designed for the work/personal split:
 
 ### `dev` — Work Layer
-**Roles:** base, shell, git, fonts, node, neovim, starship, chrome, obsidian, gnome, nvidia
+**Roles:** base, shell, git, fonts, node, neovim, tmux, starship, chrome, obsidian, gnome, nvidia
 
 **When to use:** On a work machine where corporate ansible already provides docker, opencode, and infrastructure. Run `./bootstrap.sh --profile dev` to layer your visual/editor/desktop setup on top.
 
 **What's included:**
-- Editor stack (neovim + config)
+- Editor stack (neovim + config, tmux + config)
 - Shell + prompt (bash fragments, starship)
 - Desktop environment (gnome-terminal, gnome settings/keybinds, extensions)
 - Browsers & productivity (chrome, obsidian)

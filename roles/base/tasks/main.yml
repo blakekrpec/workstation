@@ -17,6 +17,8 @@
       - python3-pip
       - xclip          # nvim system clipboard on X11
       - wl-clipboard   # nvim system clipboard on Wayland
+      - tmux           # config via roles/tmux; needs >= 3.3 (noble ships 3.4)
+      - fzf            # tmux-sessionizer picker
     state: present
     update_cache: true
     cache_valid_time: 3600
