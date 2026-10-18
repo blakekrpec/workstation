@@ -25,6 +25,7 @@ no file yet is skipped, so you can add the path before you have the dump.
 | `desktop-interface.ini` | `/org/gnome/desktop/interface/` | theme, Yaru accent colour, fonts |
 | `settings-daemon.ini` | `/org/gnome/settings-daemon/` | media keys, power, custom shortcuts |
 | `mutter.ini` | `/org/gnome/mutter/` | window management, workspaces |
+| `terminal.ini` | `/org/gnome/terminal/legacy/` | gnome-terminal profile — rose-pine-ish colors, font, cursor/highlight colors |
 
 Note the third row is `/org/gnome/desktop/interface/`, not `/org/gnome/desktop/`.
 The parent tree also holds `[background]` and `[screensaver]` `picture-uri`,
@@ -50,3 +51,12 @@ extensions.gnome.org gets installed once via the Extension Manager GUI, after
 which its settings ride along in `shell.ini`.
 
 Currently enabled on this machine: `ding`, `ubuntu-dock`, `tiling-assistant`.
+
+**`terminal.ini` drops a dead profile.** This machine's live dconf carries a
+second, stock gnome-terminal profile UUID in `list` with no custom keys of its
+own — a leftover default profile nothing ever configured. The captured file
+only lists the one themed profile (`blake`) as both `default` and the sole
+entry in `list`. If you re-capture this tree from this machine later, check
+`list` for a second UUID and drop it rather than pasting the raw dump in
+blind — same rule as the "dumps are not portable wholesale" note above, just
+self-inflicted this time instead of cross-machine.
